@@ -77,7 +77,7 @@ def prefDevices() {
 	devices.each { deviceList<< ["${it.deviceId}":it.alias] }
 	return dynamicPage(name: "prefDevices", title: "LG ThinQ OAuth",  uninstall:false, install: true) {
 		section {
-			input "devices", "enum", title: "Devices", required: true, options: deviceList
+			input "devices", "enum", title: "Devices", required: true, options: deviceList, multiple: true
 		}
 	}
 }
