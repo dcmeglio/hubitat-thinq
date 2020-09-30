@@ -29,6 +29,14 @@ preferences {
 
 @Field static def gatewayUrl = "https://kic.lgthinq.com:46030/api/common/gatewayUriList"
 
+@Field static def supportedDeviceTypes = [
+	101, // Fridge
+	201, // Washer
+	202, // Dryer
+	204, // Dishwasher
+	301 // Oven
+]
+
 def prefMain() {
 	def apiGatewayResult = lgEdmPost(gatewayUrl, [countryCode: "US", langCode: "en-US"])
 	log.debug apiGatewayResult
@@ -62,9 +70,12 @@ def prefDevices() {
 	state.user_number = oauthDetails.user_number
 
 	def devices = getDevices()
-	log.debug devices
-
+	def deviceList = [:]
+	devices.each { deviceList<< ["${it.deviceId}":it.alias] }
 	return dynamicPage(name: "prefDevices", title: "LG ThinQ OAuth",  uninstall:false, install: true) {
+		section {
+			input "devices", "enum", title: "Devices", required: true, options: deviceList
+		}
 	}
 }
 
@@ -150,41 +161,24 @@ def lgEdmPost(url, body) {
 	return data
 }
 
-def lgEdmPost2(url, body) {
-	def data
-
-		httpPost([
-			uri: url,
-			headers: [
-				"Host": "kic.lgthinq.com:46030",
-				"x-thinq-application-key": "wideq",
-				"x-thinq-security-key": "nuts_securitykey",
-				"Accept": "application/json",
-				"Content-Type": "application/json"
-			],
-			requestContentType: "application/json",
-			body: [
-				lgedmRoot: body
-			]
-		]) { resp -> 
-			data = resp.data?.lgedmRoot
-		}
-	
-	return data
-}
-
 
 def oauthInitialize() {
 	return "${state.empUrl}/spx/login/signIn?country=US&language=en-US&svc_list=SVC202&client_id=LGAO221A02&division=ha&&state=xxx&show_thirdparty_login=GGL,AMZ,FBK&redirect_uri=${URLEncoder.encode("https://kr.m.lgaccount.com/login/iabClose")}"
 }
 
 def getDevices() {
-	return lgEdmPost2(state.thinqUrl + "/member/login", [
+	def data = lgEdmPost(state.thinqUrl + "/member/login", [
 		countryCode: "US",
         langCode: "en-US",
         loginType: "EMP",
         token: state.access_token
 	])
+	if (data) {
+		def devices = data.item
+		
+		
+		return devices.findAll { d -> supportedDeviceTypes.find { supported -> supported == d.deviceType } }
+	}
 }
 
 def logDebug(msg) {
