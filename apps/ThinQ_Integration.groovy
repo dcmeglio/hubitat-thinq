@@ -37,8 +37,11 @@ preferences {
 	301 // Oven
 ]
 
+@Field static def countryCode = "US"
+@Field static def languageCode = "en-US"
+
 def prefMain() {
-	def apiGatewayResult = lgEdmPost(gatewayUrl, [countryCode: "US", langCode: "en-US"])
+	def apiGatewayResult = lgEdmPost(gatewayUrl, [countryCode: countryCode, langCode: languageCode])
 	log.debug apiGatewayResult
 	state.oauthUrl = apiGatewayResult.oauthUri
 	state.empUrl = apiGatewayResult.empUri
@@ -86,7 +89,7 @@ def getMqttServer() {
 			uri: "https://common.lgthinq.com",
 			path: "/route",
 			headers: [
-				"x-country-code": "US",
+				"x-country-code": countryCode,
 				"x-service-phase": "OP"
 			]
 		]
@@ -163,13 +166,13 @@ def lgEdmPost(url, body) {
 
 
 def oauthInitialize() {
-	return "${state.empUrl}/spx/login/signIn?country=US&language=en-US&svc_list=SVC202&client_id=LGAO221A02&division=ha&&state=xxx&show_thirdparty_login=GGL,AMZ,FBK&redirect_uri=${URLEncoder.encode("https://kr.m.lgaccount.com/login/iabClose")}"
+	return "${state.empUrl}/spx/login/signIn?country=${countryCode}&language=${languageCode}&svc_list=SVC202&client_id=LGAO221A02&division=ha&&state=xxx&show_thirdparty_login=GGL,AMZ,FBK&redirect_uri=${URLEncoder.encode("https://kr.m.lgaccount.com/login/iabClose")}"
 }
 
 def getDevices() {
 	def data = lgEdmPost(state.thinqUrl + "/member/login", [
-		countryCode: "US",
-        langCode: "en-US",
+		countryCode: countryCode,
+        langCode: languageCode,
         loginType: "EMP",
         token: state.access_token
 	])
