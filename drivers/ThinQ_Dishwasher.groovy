@@ -8,5 +8,10 @@
 metadata {
     definition(name: "LG ThinQ Dishwasher", namespace: "dcm.thinq", author: "dmeglio@gmail.com") {
         capability "Sensor"
+        capability "Initialize"
     }
+}
+
+def initialize() {
+        
 }

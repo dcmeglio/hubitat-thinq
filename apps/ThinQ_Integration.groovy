@@ -126,7 +126,13 @@ def initialize() {
 				break
 		}
 		if (!getChildDevice(deviceDetails.id)) {
-			addChildDevice("dcm.thinq", driverName, "thinq:" + deviceDetails.id, 1234, ["name": deviceDetails.name,isComponent: false])
+			def child = addChildDevice("dcm.thinq", driverName, "thinq:" + deviceDetails.id, 1234, ["name": deviceDetails.name,isComponent: false])
+			if (!findMasterDevice()) {
+				child.updateDataValue("master", "true")
+				child.initialize()
+			}
+			else if (child.getDataValue("master") != "true")
+				child.updateDataValue("master", "false")
 		}
 	}
 }
@@ -233,8 +239,12 @@ def getDevices() {
 	}
 }
 
+def findMasterDevice() {
+    return getChildDevices().find { 
+        it.hasCapability("Initialize") && it.getDataValue("master") == "true"
+    }
+}
+
 def logDebug(msg) {
-    if (parent.getDebugLogging()) {
-		log.debug msg
-	}
+	log.debug msg
 }
