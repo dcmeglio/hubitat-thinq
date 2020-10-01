@@ -49,6 +49,7 @@ preferences {
 @Field static def languageCode = "en-US"
 
 def prefMain() {
+	log.debug getCountries()
 	def apiGatewayResult = lgEdmPost(gatewayUrl, [countryCode: countryCode, langCode: languageCode])
 	log.debug apiGatewayResult
 	state.oauthUrl = apiGatewayResult.oauthUri
@@ -136,6 +137,36 @@ def initialize() {
 		}
 	}
 }
+
+def getCountries() {
+	def result
+	httpGet(
+		[
+			uri: "https://aic-service.lgthinq.com:46030/v1/service/application/country-language",
+			headers: [
+				"Accept": "application/json",
+				"x-thinq-app-os": "IOS",
+				"x-thinq-app-ver": "3.5.0000",
+				"x-thinq-app-level": "PRD",
+				"x-country-code": "US",
+				"x-message-id": "wideq",
+				"x-api-key": "VGhpblEyLjAgU0VSVklDRQ==",
+				"x-thinq-app-type": "NUTS",
+				"x-service-code": "SVC202",
+				"x-service-phase": "OP",
+				"x-client-id": "LGAO221A02",
+				"x-language-code": "en-US",
+				"Host": "aic-service.lgthinq.com:46030"
+			],
+			requestContentType: "application/json"
+		]
+	) {
+		resp ->
+		result = resp.data
+	}
+	return result
+}
+
 
 def getMqttServer() {
 	def result
