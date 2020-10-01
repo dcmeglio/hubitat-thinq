@@ -24,6 +24,7 @@ definition(
 
 preferences {
     page(name: "prefMain")
+	page(name: "prefCert")
 	page(name: "prefDevices")
 }
 
@@ -65,7 +66,7 @@ def prefMain() {
 
 	}
 
-	return dynamicPage(name: "prefMain", title: "LG ThinQ OAuth", nextPage: "prefDevices", uninstall:false, install: false) {
+	return dynamicPage(name: "prefMain", title: "LG ThinQ OAuth", nextPage: "prefCert", uninstall:false, install: false) {
 		section {	
 			input "region", "enum", title: "Select your region", options: countriesList, required: true, submitOnChange: true
 			if (state.countryCode != null && state.langCode != null) {
@@ -76,9 +77,20 @@ def prefMain() {
 				else {
 					desc = "Your Hubitat and LG ThinQ accounts are connected"
 				}
+				paragraph "When you click the link below a popup will open to allow you to login to your LG account. After you login, the popup will go blank. At that point, copy the URL from that popup, close the popup and wait for this screen to reload. At that point, paste the URL into the box below and click Next."
 				href url: oauthInitialize(), style: "external", required: true, title: "LG ThinQ Account Authorization", description: desc
 				input "url", "text", title: "Enter the URL you are redirected to after logging in"
 			}
+		}
+	}
+}
+
+def prefCert() {
+	return dynamicPage(name: "prefCert", title: "LG ThinQ OAuth", nextPage: "prefDevices", uninstall:false, install: false) {
+		section {
+			paragraph "The LG ThinQ server uses certificate based authentication. You will need to create an RSA 2048bit private key and a CSR for the certificate. In PKCS#1 PEM format. If you know how to create certificates yourself, you can feel free. If not there is a web tool <a href=\"https://certificatetools.com/\" target=\"_blank\">https://certificatetools.com/</a> which you can use to generate the key and CSR. Once you have them paste them below."
+			input "privateKey", "textarea", title: "Private Key", required: true
+			input "csr", "textarea", title: "CSR", required: true
 		}
 	}
 }
