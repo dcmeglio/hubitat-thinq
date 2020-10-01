@@ -105,6 +105,10 @@ def prefDevices() {
 	state.refresh_token = result.refresh_token
 	state.user_number = oauthDetails.user_number
 
+	def certAndSubData = getCertAndSub()
+	state.cert = certAndSubData.certificatePem
+	state.subscriptions = certAndSubData.subscriptions
+
 	def devices = getDevices()
 	def deviceList = [:]
 	state.foundDevices = []
@@ -162,12 +166,8 @@ def initialize() {
 	}
 }
 
-def getCountries() {
-	def result
-	httpGet(
-		[
-			uri: "https://aic-service.lgthinq.com:46030/v1/service/application/country-language",
-			headers: [
+def getStandardHeaders() {
+	return [
 				"Accept": "application/json",
 				"x-thinq-app-os": "IOS",
 				"x-thinq-app-ver": "3.5.0000",
@@ -178,10 +178,18 @@ def getCountries() {
 				"x-thinq-app-type": "NUTS",
 				"x-service-code": "SVC202",
 				"x-service-phase": "OP",
-				"x-client-id": "LGAO221A02",
+				"x-client-id": "65260af7e8e6547b51fdccf930097c51eb9885a508d3fddfa9ee6cdec22ae1bd",
 				"x-language-code": "en-US",
 				"Host": "aic-service.lgthinq.com:46030"
-			],
+			]
+}
+
+def getCountries() {
+	def result
+	httpGet(
+		[
+			uri: "https://aic-service.lgthinq.com:46030/v1/service/application/country-language",
+			headers: getStandardHeaders(),
 			requestContentType: "application/json"
 		]
 	) {
@@ -196,21 +204,7 @@ def getGatewayDetails() {
 	httpGet(
 		[
 			uri: gatewayUrl,
-			headers: [
-				"Accept": "application/json",
-				"x-thinq-app-os": "IOS",
-				"x-thinq-app-ver": "3.5.0000",
-				"x-thinq-app-level": "PRD",
-				"x-country-code": "US",
-				"x-message-id": "wideq",
-				"x-api-key": "VGhpblEyLjAgU0VSVklDRQ==",
-				"x-thinq-app-type": "NUTS",
-				"x-service-code": "SVC202",
-				"x-service-phase": "OP",
-				"x-client-id": "LGAO221A02",
-				"x-language-code": "en-US",
-				"Host": "aic-service.lgthinq.com:46030"
-			],
+			headers: getStandardHeaders(),
 			requestContentType: "application/json"
 		]
 	) {
@@ -219,7 +213,6 @@ def getGatewayDetails() {
 	}
 	return result
 }
-
 
 def getMqttServer() {
 	def result
@@ -233,6 +226,28 @@ def getMqttServer() {
 			]
 		]
 	) { resp ->
+		result = resp.data?.result
+	}
+	return result
+}
+
+def getCertAndSub() {
+	def result
+	def headers = getStandardHeaders()
+	headers << ["x-emp-token": state.access_token]
+	headers << ["x-user-no": state.user_number]
+	httpPost(
+		[
+			uri: "https://route.lgthinq.com:46030/v1/service/users/client/certificate",
+			headers: headers,
+			requestContentType: "application/json",
+			body: [
+				csr: csr
+			]
+			
+		]
+	) {
+		resp ->
 		result = resp.data?.result
 	}
 	return result
