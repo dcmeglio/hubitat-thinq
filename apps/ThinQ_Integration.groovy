@@ -37,6 +37,14 @@ preferences {
 	301 // Oven
 ]
 
+@Field static def deviceTypeConstants = [
+	Fridge: 101,
+	Washer: 201,
+	Dryer: 202,
+	Dishwasher: 204,
+	Oven: 301
+]
+
 @Field static def countryCode = "US"
 @Field static def languageCode = "en-US"
 
@@ -74,10 +82,51 @@ def prefDevices() {
 
 	def devices = getDevices()
 	def deviceList = [:]
-	devices.each { deviceList<< ["${it.deviceId}":it.alias] }
+	state.foundDevices = []
+	devices.each { 
+		deviceList << ["${it.deviceId}":it.alias] 
+		state.foundDevices << [id: it.deviceId, name: it.alias, type: it.deviceType]
+	}
+
+	
 	return dynamicPage(name: "prefDevices", title: "LG ThinQ OAuth",  uninstall:false, install: true) {
 		section {
-			input "devices", "enum", title: "Devices", required: true, options: deviceList, multiple: true
+			input "thinqDevices", "enum", title: "Devices", required: true, options: deviceList, multiple: true
+		}
+	}
+}
+
+def installed() {
+	initialize()
+}
+
+def updated() {
+	initialize()
+}
+
+def initialize() {
+	for (d in thinqDevices) {
+		def deviceDetails = state.foundDevices.find { it.id == d }
+		def driverName = ""
+		switch (deviceDetails.type) {
+			case deviceTypeConstants.Dryer:
+				driverName = "LG ThinQ Dryer"
+				break
+			case deviceTypeConstants.Washer:
+				driverName = "LG ThinQ Washer"
+				break
+			case deviceTypeConstants.Fridge:
+				driverName = "LG ThinQ Fridge"
+				break
+			case deviceTypeConstants.Oven:
+				driverName = "LG ThinQ Oven"
+				break
+			case deviceTypeConstants.Dishwasher:
+				driverName = "LG ThinQ Dishwasher"
+				break
+		}
+		if (!getChildDevice(deviceDetails.id)) {
+			addChildDevice("dcm.thinq", driverName, "thinq:" + deviceDetails.id, 1234, ["name": deviceDetails.name,isComponent: false])
 		}
 	}
 }
