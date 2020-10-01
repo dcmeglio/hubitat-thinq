@@ -27,7 +27,7 @@ preferences {
 	page(name: "prefDevices")
 }
 
-@Field static def gatewayUrl = "https://kic.lgthinq.com:46030/api/common/gatewayUriList"
+@Field static def gatewayUrl = "https://route.lgthinq.com:46030/v1/service/application/gateway-uri"
 
 @Field static def supportedDeviceTypes = [
 	101, // Fridge
@@ -45,28 +45,40 @@ preferences {
 	Oven: 301
 ]
 
-@Field static def countryCode = "US"
-@Field static def languageCode = "en-US"
-
 def prefMain() {
-	log.debug getCountries()
-	def apiGatewayResult = lgEdmPost(gatewayUrl, [countryCode: countryCode, langCode: languageCode])
-	log.debug apiGatewayResult
-	state.oauthUrl = apiGatewayResult.oauthUri
-	state.empUrl = apiGatewayResult.empUri
-	state.thinqUrl = apiGatewayResult.thinqUri
+	def countries = getCountries()
+
+	def countriesList = [:]
+	countries.each { countriesList << ["${it.langCode}": it.description]}
+
+	if (region != null) {
+		state.langCode = region
+		state.countryCode = countries.find { it.langCode == region}?.countryCode
+		def apiGatewayResult = getGatewayDetails()
+		log.debug apiGatewayResult
+		state.oauthUrl = apiGatewayResult.oauthUri
+		state.empUrl = apiGatewayResult.empUri
+		state.thinqUrl = apiGatewayResult.thinq2Uri
+		state.thinq1Url = apiGatewayResult.thinq1Uri
+		state.empSpxUri = apiGatewayResult.empSpxUri
+		state.rtiUri = apiGatewayResult.rtiUri
+
+	}
 
 	return dynamicPage(name: "prefMain", title: "LG ThinQ OAuth", nextPage: "prefDevices", uninstall:false, install: false) {
 		section {	
-			def desc = ""
-			if (!state.authToken) {
-				desc = "To continue you will need to connect your LG ThinQ and Hubitat accounts"
+			input "region", "enum", title: "Select your region", options: countriesList, required: true, submitOnChange: true
+			if (state.countryCode != null && state.langCode != null) {
+				def desc = ""
+				if (!state.authToken) {
+					desc = "To continue you will need to connect your LG ThinQ and Hubitat accounts"
+				}
+				else {
+					desc = "Your Hubitat and LG ThinQ accounts are connected"
+				}
+				href url: oauthInitialize(), style: "external", required: true, title: "LG ThinQ Account Authorization", description: desc
+				input "url", "text", title: "Enter the URL you are redirected to after logging in"
 			}
-			else {
-				desc = "Your Hubitat and LG ThinQ accounts are connected"
-			}
-			href url: oauthInitialize(), style: "external", required: true, title: "LG ThinQ Account Authorization", description: desc
-			input "url", "text", title: "Enter the URL you are redirected to after logging in"
 		}
 	}
 }
@@ -162,7 +174,36 @@ def getCountries() {
 		]
 	) {
 		resp ->
-		result = resp.data
+		result = resp.data?.result
+	}
+	return result
+}
+
+def getGatewayDetails() {
+	def result
+	httpGet(
+		[
+			uri: gatewayUrl,
+			headers: [
+				"Accept": "application/json",
+				"x-thinq-app-os": "IOS",
+				"x-thinq-app-ver": "3.5.0000",
+				"x-thinq-app-level": "PRD",
+				"x-country-code": "US",
+				"x-message-id": "wideq",
+				"x-api-key": "VGhpblEyLjAgU0VSVklDRQ==",
+				"x-thinq-app-type": "NUTS",
+				"x-service-code": "SVC202",
+				"x-service-phase": "OP",
+				"x-client-id": "LGAO221A02",
+				"x-language-code": "en-US",
+				"Host": "aic-service.lgthinq.com:46030"
+			],
+			requestContentType: "application/json"
+		]
+	) {
+		resp ->
+		result = resp.data?.result
 	}
 	return result
 }
@@ -175,7 +216,7 @@ def getMqttServer() {
 			uri: "https://common.lgthinq.com",
 			path: "/route",
 			headers: [
-				"x-country-code": countryCode,
+				"x-country-code": state.countryCode,
 				"x-service-phase": "OP"
 			]
 		]
@@ -234,10 +275,23 @@ def lgEdmPost(url, body) {
 		httpPost([
 			uri: url,
 			headers: [
-				"Host": "kic.lgthinq.com:46030",
-				"x-thinq-application-key": "wideq",
-				"x-thinq-security-key": "nuts_securitykey",
-				"Accept": "application/json"
+		//		"Host": "kic.lgthinq.com:46030",
+		//		"x-thinq-application-key": "wideq",
+		//		"x-thinq-security-key": "nuts_securitykey",
+		//		"Accept": "application/json"
+				"Accept": "application/json",
+				"x-thinq-app-os": "IOS",
+				"x-thinq-app-ver": "3.5.0000",
+				"x-thinq-app-level": "PRD",
+				"x-country-code": "US",
+				"x-message-id": "wideq",
+				"x-api-key": "VGhpblEyLjAgU0VSVklDRQ==",
+				"x-thinq-app-type": "NUTS",
+				"x-service-code": "SVC202",
+				"x-service-phase": "OP",
+				"x-client-id": "LGAO221A02",
+				"x-language-code": "en-US",
+				"Host": "aic-service.lgthinq.com:46030"
 			],
 			requestContentType: "application/json",
 			body: [
@@ -252,13 +306,13 @@ def lgEdmPost(url, body) {
 
 
 def oauthInitialize() {
-	return "${state.empUrl}/spx/login/signIn?country=${countryCode}&language=${languageCode}&svc_list=SVC202&client_id=LGAO221A02&division=ha&&state=xxx&show_thirdparty_login=GGL,AMZ,FBK&redirect_uri=${URLEncoder.encode("https://kr.m.lgaccount.com/login/iabClose")}"
+	return "${state.empUrl}/spx/login/signIn?country=${state.countryCode}&language=${state.langCode}&svc_list=SVC202&client_id=LGAO221A02&division=ha&&state=xxx&show_thirdparty_login=GGL,AMZ,FBK&redirect_uri=${URLEncoder.encode("https://kr.m.lgaccount.com/login/iabClose")}"
 }
 
 def getDevices() {
-	def data = lgEdmPost(state.thinqUrl + "/member/login", [
-		countryCode: countryCode,
-        langCode: languageCode,
+	def data = lgEdmPost(state.thinq1Url + "/member/login", [
+		countryCode: state.countryCode,
+        langCode: state.langCode,
         loginType: "EMP",
         token: state.access_token
 	])
