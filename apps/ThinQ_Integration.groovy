@@ -32,6 +32,7 @@ preferences {
 }
 
 @Field static def gatewayUrl = "https://route.lgthinq.com:46030/v1/service/application/gateway-uri"
+@Field static def caCertUrl = "https://www.websecurity.digicert.com/content/dam/websitesecurity/digitalassets/desktop/pdfs/roots/VeriSign-Class%203-Public-Primary-Certification-Authority-G5.pem"
 
 @Field static def supportedDeviceTypes = [
 	101, // Fridge
@@ -219,7 +220,7 @@ def initialize() {
 				driverName = "LG ThinQ Dishwasher"
 				break
 		}
-		if (!getChildDevice(deviceDetails.id)) {
+		if (!getChildDevice("thinq:"+deviceDetails.id)) {
 			def child = addChildDevice("dcm.thinq", driverName, "thinq:" + deviceDetails.id, 1234, ["name": deviceDetails.name,isComponent: false])
 			if (!findMasterDevice()) {
 				child.updateDataValue("master", "true")
@@ -420,6 +421,19 @@ def findMasterDevice() {
     return getChildDevices().find { 
         it.hasCapability("Initialize") && it.getDataValue("master") == "true"
     }
+}
+
+def retrieveMqttDetails() {
+	def caCert = ""
+	httpGet([
+		uri: caCertUrl,
+		textParser: true
+	]) {
+		resp ->
+			caCert = resp.data.text
+
+	}
+	return [server: state.mqttServer, subscriptions: state.subscriptions, certificate: state.cert, privateKey: privateKey, caCertificate: caCert, clientId: "65260af7e8e6547b51fdccf930097c51eb9885a508d3fddfa9ee6cdec22ae1bd"]
 }
 
 def logDebug(msg) {
