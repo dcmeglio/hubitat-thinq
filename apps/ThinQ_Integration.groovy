@@ -113,6 +113,8 @@ preferences {
 ]
 
 def prefMain() {
+	if (state.client_id == null)
+		state.client_id = (UUID.randomUUID().toString()+UUID.randomUUID().toString()).replaceAll(/-/,"")
 	def countries = getCountries()
 
 	def countriesList = [:]
@@ -170,7 +172,8 @@ def prefDevices() {
 	state.access_token = result.access_token
 	state.refresh_token = result.refresh_token
 	state.user_number = oauthDetails.user_number
-
+	
+	log.debug register()
 	def certAndSubData = getCertAndSub()
 	state.cert = certAndSubData.certificatePem
 	state.subscriptions = certAndSubData.subscriptions
@@ -244,7 +247,7 @@ def getStandardHeaders() {
 				"x-thinq-app-type": "NUTS",
 				"x-service-code": "SVC202",
 				"x-service-phase": "OP",
-				"x-client-id": "65260af7e8e6547b51fdccf930097c51eb9885a508d3fddfa9ee6cdec22ae1bd",
+				"x-client-id": state.client_id,
 				"x-language-code": "en-US",
 				"Host": "aic-service.lgthinq.com:46030"
 			]
@@ -292,6 +295,25 @@ def getMqttServer() {
 			]
 		]
 	) { resp ->
+		result = resp.data?.result
+	}
+	return result
+}
+
+def register() {
+	def result
+	def headers = getStandardHeaders()
+	headers << ["x-emp-token": state.access_token]
+	headers << ["x-user-no": state.user_number]
+	httpPost(
+		[
+			uri: "https://route.lgthinq.com:46030/v1/service/users/client",
+			headers: headers,
+			requestContentType: "application/json"
+			
+		]
+	) {
+		resp ->
 		result = resp.data?.result
 	}
 	return result
@@ -382,7 +404,7 @@ def lgEdmPost(url, body) {
 				"x-thinq-app-type": "NUTS",
 				"x-service-code": "SVC202",
 				"x-service-phase": "OP",
-				"x-client-id": "LGAO221A02",
+				"x-client-id": state.client_id,
 				"x-language-code": "en-US",
 				"Host": "aic-service.lgthinq.com:46030"
 			],
@@ -433,7 +455,7 @@ def retrieveMqttDetails() {
 			caCert = resp.data.text
 
 	}
-	return [server: state.mqttServer, subscriptions: state.subscriptions, certificate: state.cert, privateKey: privateKey, caCertificate: caCert, clientId: "65260af7e8e6547b51fdccf930097c51eb9885a508d3fddfa9ee6cdec22ae1bd"]
+	return [server: state.mqttServer, subscriptions: state.subscriptions, certificate: state.cert, privateKey: privateKey, caCertificate: caCert, clientId: state.client_id]
 }
 
 def logDebug(msg) {
