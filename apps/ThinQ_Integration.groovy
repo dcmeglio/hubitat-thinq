@@ -136,10 +136,11 @@ def prefMain() {
 
 	return dynamicPage(name: "prefMain", title: "LG ThinQ OAuth", nextPage: "prefCert", uninstall:false, install: false) {
 		section {	
+			state.prevUrl = url
 			input "region", "enum", title: "Select your region", options: countriesList, required: true, submitOnChange: true
 			if (state.countryCode != null && state.langCode != null) {
 				def desc = ""
-				if (!state.authToken) {
+				if (!state.access_token) {
 					desc = "To continue you will need to connect your LG ThinQ and Hubitat accounts"
 				}
 				else {
@@ -164,17 +165,19 @@ def prefCert() {
 }
 
 def prefDevices() {
-	def oauthDetails = getOAuthDetailsFromUrl()
-	state.oauth_url = oauthDetails.url[0..-2]
-	def result = getAccessToken([code: oauthDetails.code, grant_type: "authorization_code", redirect_uri: "https://kr.m.lgaccount.com/login/iabClose"])
-	
-	if (result.toString().startsWith("LG.OAUTH.EC")) {
-		return returnErrorPage("Unable to validate OAuth Code ${result}. Click next to return to the main page and try again", "prefMain")
+	if (url != state.prevUrl) {
+		def oauthDetails = getOAuthDetailsFromUrl()
+		state.oauth_url = oauthDetails.url[0..-2]
+		def result = getAccessToken([code: oauthDetails.code, grant_type: "authorization_code", redirect_uri: "https://kr.m.lgaccount.com/login/iabClose"])
+		
+		if (result.toString().startsWith("LG.OAUTH.EC")) {
+			return returnErrorPage("Unable to validate OAuth Code ${result}. Click next to return to the main page and try again", "prefMain")
+		}
+		state.user_number = oauthDetails.user_number
+		state.access_token = result.access_token
+		state.refresh_token = result.refresh_token
 	}
 	state.mqttServer = getMqttServer().mqttServer
-	state.access_token = result.access_token
-	state.refresh_token = result.refresh_token
-	state.user_number = oauthDetails.user_number
 	
 	log.debug register()
 	def certAndSubData = getCertAndSub()
@@ -316,14 +319,17 @@ def lgAPIPost(uri, body) {
 		if (data != null) {
 			if (responseCodeText[data.resultCode] == "EMP_AUTHENTICATION_FAILED") {
 				def refreshResult = getAccessToken([refresh_token: state.refresh_token, grant_type: "refresh_token"])
-				if (refreshResult.toString().startsWith("LG.OAUTH.EC"))
+				if (refreshResult.toString().startsWith("LG.OAUTH.EC")) {
+					state.access_token = null
 					log.error "Refresh token failed ${refreshResult}"
+				}
 				else 
 				{
 					state.access_token = refreshResult.access_token
 					if (refreshResult.refresh_token)
 						state.refresh_token = refreshResult.refresh_token
-					return lgAPIPost(uri, body)
+					if (state.access_token != null)
+						return lgAPIPost(uri, body)
 				}
 			}
 			else
