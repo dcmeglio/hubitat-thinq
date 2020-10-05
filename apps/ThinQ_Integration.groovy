@@ -454,7 +454,6 @@ def lgEdmPost(url, body) {
 	return data
 }
 
-
 def oauthInitialize() {
 	return "${state.empUrl}/spx/login/signIn?country=${state.countryCode}&language=${state.langCode}&svc_list=SVC202&client_id=LGAO221A02&division=ha&&state=xxx&show_thirdparty_login=GGL,AMZ,FBK&redirect_uri=${URLEncoder.encode("https://kr.m.lgaccount.com/login/iabClose")}"
 }
@@ -491,6 +490,13 @@ def retrieveMqttDetails() {
 
 	}
 	return [server: state.mqttServer, subscriptions: state.subscriptions, certificate: state.cert, privateKey: privateKey, caCertificate: caCert, clientId: state.client_id]
+}
+
+def processMqttMessage(dev, payload) {
+	switch (payload.type) {
+		default:
+			log.debug "Unknown MQTT Message ${payload}"
+	}
 }
 
 def logDebug(msg) {

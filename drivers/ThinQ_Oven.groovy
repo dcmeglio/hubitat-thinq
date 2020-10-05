@@ -49,9 +49,9 @@ def mqttConnectUntilSuccessful() {
 
 def parse(message) {
     def topic = interfaces.mqtt.parseMessage(message)
-    def payload =  new JsonSlurper().parseText(topic.payload) 
+    def payload = new JsonSlurper().parseText(topic.payload) 
 
-    log.debug "parse: " + payload
+    parent.processMqttMessage(this, payload)
 }
 
 def mqttClientStatus(String message) {
