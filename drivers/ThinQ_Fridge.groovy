@@ -51,4 +51,14 @@ def parse(message) {
 
 def mqttClientStatus(String message) {
     log.debug "Status: " + message
+
+    if (message.startsWith("Error:")) {
+        log.error "MQTT Error: ${message}"
+        try {
+            interfaces.mqtt.disconnect() // Guarantee we're disconnected
+        }
+        catch (e) {
+        }
+		mqttConnectUntilSuccessful()
+    }
 }
