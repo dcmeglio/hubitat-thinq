@@ -246,7 +246,7 @@ def initialize() {
 }
 
 def getStandardHeaders() {
-	return [
+	def headers = [
 				"Accept": "application/json",
 				"x-thinq-app-os": "IOS",
 				"x-thinq-app-ver": "3.5.0000",
@@ -261,7 +261,13 @@ def getStandardHeaders() {
 				"x-language-code": "en-US",
 				"Host": "aic-service.lgthinq.com:46030"
 			]
+	if (state.access_token != null)
+		headers << ["x-emp-token": state.access_token]
+	if (state.user_number != null)
+		headers << ["x-user-no": state.user_number]
+	return headers
 }
+
 
 def lgAPIGet(uri) {
 	def result = null
@@ -280,9 +286,40 @@ def lgAPIGet(uri) {
 		return result
 	}
 	catch (Exception e) {
-		def data = e.getResponse().data
+		def data = e?.getResponse()?.data
 		if (data != null) {
 			log.error "Error calling ${uri}: " + responseCodeText[data.resultCode]
+		}
+	}
+}
+
+def lgAPIPost(uri, body) {
+	def result
+	def headers = getStandardHeaders()
+
+	try
+	{
+		httpPost(
+			[
+				uri: uri,
+				headers: headers,
+				requestContentType: "application/json",
+				body: body
+			]
+		) {
+			resp ->
+			result = resp.data?.result
+		}
+		return result
+	}
+	catch (Exception e) {
+		def data = e?.getResponse()?.data
+		if (data != null) {
+			if (responseCodeText[data.resultCode] == "EMP_AUTHENTICATION_FAILED") {
+				log.debug "Token expired, need to figure out the refresh process"
+			}
+			else
+				log.error "Error calling ${uri}: " + responseCodeText[data.resultCode]
 		}
 	}
 }
@@ -313,44 +350,11 @@ def getMqttServer() {
 }
 
 def register() {
-	def result
-	def headers = getStandardHeaders()
-	headers << ["x-emp-token": state.access_token]
-	headers << ["x-user-no": state.user_number]
-	httpPost(
-		[
-			uri: "https://route.lgthinq.com:46030/v1/service/users/client",
-			headers: headers,
-			requestContentType: "application/json"
-			
-		]
-	) {
-		resp ->
-		result = resp.data?.result
-	}
-	return result
+	return lgAPIPost("https://route.lgthinq.com:46030/v1/service/users/client", null)
 }
 
 def getCertAndSub() {
-	def result
-	def headers = getStandardHeaders()
-	headers << ["x-emp-token": state.access_token]
-	headers << ["x-user-no": state.user_number]
-	httpPost(
-		[
-			uri: "https://route.lgthinq.com:46030/v1/service/users/client/certificate",
-			headers: headers,
-			requestContentType: "application/json",
-			body: [
-				csr: csr
-			]
-			
-		]
-	) {
-		resp ->
-		result = resp.data?.result
-	}
-	return result
+	return lgAPIPost("https://route.lgthinq.com:46030/v1/service/users/client/certificate", [csr: csr])
 }
 
 def getOAuthDetailsFromUrl() {
@@ -396,7 +400,7 @@ def getAccessToken(oauthdetails) {
 		}
 	}
 	catch (Exception e) {
-		def data = e.getResponse().data
+		def data = e?.getResponse()?.data
 		if (data != null) {
 			log.error "OAuth error: ${data.error.code}: ${data.error.message}"
 			return data.error.code
