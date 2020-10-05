@@ -12,6 +12,8 @@ metadata {
     }
 }
 
+import groovy.json.JsonSlurper
+
 def initialize() {
     if (interfaces.mqtt.isConnected())
 		interfaces.mqtt.disconnect()
@@ -46,7 +48,10 @@ def mqttConnectUntilSuccessful() {
 }
 
 def parse(message) {
-    log.debug "parse: " + message
+    def topic = interfaces.mqtt.parseMessage(message)
+    def payload =  new JsonSlurper().parseText(topic.payload) 
+
+    log.debug "parse: " + payload
 }
 
 def mqttClientStatus(String message) {
