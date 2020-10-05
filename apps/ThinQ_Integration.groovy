@@ -167,7 +167,10 @@ def prefDevices() {
 	def oauthDetails = getOAuthDetailsFromUrl()
 	log.debug oauthDetails
 	def result = getAccessToken(oauthDetails)
-	log.debug result
+	
+	if (result.startsWith("LG.OAUTH.EC")) {
+		return returnErrorPage("Unable to validate OAuth Code ${result}. Click next to return to the main page and try again", "prefMain")
+	}
 	state.mqttServer = getMqttServer().mqttServer
 	state.access_token = result.access_token
 	state.refresh_token = result.refresh_token
@@ -185,11 +188,18 @@ def prefDevices() {
 		deviceList << ["${it.deviceId}":it.alias] 
 		state.foundDevices << [id: it.deviceId, name: it.alias, type: it.deviceType]
 	}
-
 	
 	return dynamicPage(name: "prefDevices", title: "LG ThinQ OAuth",  uninstall:false, install: true) {
 		section {
 			input "thinqDevices", "enum", title: "Devices", required: true, options: deviceList, multiple: true
+		}
+	}
+}
+
+def returnErrorPage(message, nextPage) {
+		return dynamicPage(name: "prefError", title: "Error Occurred",  nextPage: nextPage, uninstall:false, install: false) {
+		section {
+			paragraph message
 		}
 	}
 }
@@ -253,34 +263,36 @@ def getStandardHeaders() {
 			]
 }
 
-def getCountries() {
-	def result
-	httpGet(
-		[
-			uri: "https://aic-service.lgthinq.com:46030/v1/service/application/country-language",
-			headers: getStandardHeaders(),
-			requestContentType: "application/json"
-		]
-	) {
-		resp ->
-		result = resp.data?.result
+def lgAPIGet(uri) {
+	def result = null
+	try
+	{
+		httpGet(
+			[
+				uri: uri,
+				headers: getStandardHeaders(),
+				requestContentType: "application/json"
+			]
+		) {
+			resp ->
+			result = resp.data?.result
+		}
+		return result
 	}
-	return result
+	catch (Exception e) {
+		def data = e.getResponse().data
+		if (data != null) {
+			log.error "Error calling ${uri}: " + responseCodeText[data.resultCode]
+		}
+	}
+}
+
+def getCountries() {
+	return lgAPIGet("https://aic-service.lgthinq.com:46030/v1/service/application/country-language")
 }
 
 def getGatewayDetails() {
-	def result
-	httpGet(
-		[
-			uri: gatewayUrl,
-			headers: getStandardHeaders(),
-			requestContentType: "application/json"
-		]
-	) {
-		resp ->
-		result = resp.data?.result
-	}
-	return result
+	return lgAPIGet(gatewayUrl)
 }
 
 def getMqttServer() {
@@ -364,22 +376,31 @@ def getTimestamp() {
 
 def getAccessToken(oauthdetails) {
 	def result
-	
-	httpPost([
-		uri: oauthdetails.url[0..-2],
-		path: "/oauth/1.0/oauth2/token",
-		headers: [
-			"Accept": "application/json",
-			"x-lge-appkey": "LGAO221A02",
-			"x-lge-oauth-date": getTimestamp()
-		],
-		body: [
-			code: oauthdetails.code,
-        	grant_type: "authorization_code",
-        	redirect_uri: "https://kr.m.lgaccount.com/login/iabClose"
-		]
-	]) { resp ->
-		result = resp.data
+	try
+	{
+		httpPost([
+			uri: oauthdetails.url[0..-2],
+			path: "/oauth/1.0/oauth2/token",
+			headers: [
+				"Accept": "application/json",
+				"x-lge-appkey": "LGAO221A02",
+				"x-lge-oauth-date": getTimestamp()
+			],
+			body: [
+				code: oauthdetails.code,
+				grant_type: "authorization_code",
+				redirect_uri: "https://kr.m.lgaccount.com/login/iabClose"
+			]
+		]) { resp ->
+			result = resp.data
+		}
+	}
+	catch (Exception e) {
+		def data = e.getResponse().data
+		if (data != null) {
+			log.error "OAuth error: ${data.error.code}: ${data.error.message}"
+			return data.error.code
+		}
 	}
 	return result
 }
