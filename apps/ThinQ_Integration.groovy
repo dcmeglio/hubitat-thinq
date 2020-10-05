@@ -165,10 +165,10 @@ def prefCert() {
 
 def prefDevices() {
 	def oauthDetails = getOAuthDetailsFromUrl()
-	log.debug oauthDetails
-	def result = getAccessToken(oauthDetails)
+	state.oauth_url = oauthDetails.url[0..-2]
+	def result = getAccessToken([code: oauthDetails.code, grant_type: "authorization_code", redirect_uri: "https://kr.m.lgaccount.com/login/iabClose"])
 	
-	if (result.startsWith("LG.OAUTH.EC")) {
+	if (result.toString().startsWith("LG.OAUTH.EC")) {
 		return returnErrorPage("Unable to validate OAuth Code ${result}. Click next to return to the main page and try again", "prefMain")
 	}
 	state.mqttServer = getMqttServer().mqttServer
@@ -268,7 +268,6 @@ def getStandardHeaders() {
 	return headers
 }
 
-
 def lgAPIGet(uri) {
 	def result = null
 	try
@@ -316,7 +315,16 @@ def lgAPIPost(uri, body) {
 		def data = e?.getResponse()?.data
 		if (data != null) {
 			if (responseCodeText[data.resultCode] == "EMP_AUTHENTICATION_FAILED") {
-				log.debug "Token expired, need to figure out the refresh process"
+				def refreshResult = getAccessToken([refresh_token: state.refresh_token, grant_type: "refresh_token"])
+				if (refreshResult.toString().startsWith("LG.OAUTH.EC"))
+					log.error "Refresh token failed ${refreshResult}"
+				else 
+				{
+					state.access_token = refreshResult.access_token
+					if (refreshResult.refresh_token)
+						state.refresh_token = refreshResult.refresh_token
+					return lgAPIPost(uri, body)
+				}
 			}
 			else
 				log.error "Error calling ${uri}: " + responseCodeText[data.resultCode]
@@ -378,23 +386,19 @@ def getTimestamp() {
     return date.format("EEE, dd MMM yyyy HH:mm:ss '+0000'", TimeZone.getTimeZone('UTC'))
 }
 
-def getAccessToken(oauthdetails) {
+def getAccessToken(body) {
 	def result
 	try
 	{
 		httpPost([
-			uri: oauthdetails.url[0..-2],
+			uri: state.oauth_url,
 			path: "/oauth/1.0/oauth2/token",
 			headers: [
 				"Accept": "application/json",
 				"x-lge-appkey": "LGAO221A02",
 				"x-lge-oauth-date": getTimestamp()
 			],
-			body: [
-				code: oauthdetails.code,
-				grant_type: "authorization_code",
-				redirect_uri: "https://kr.m.lgaccount.com/login/iabClose"
-			]
+			body: body 
 		]) { resp ->
 			result = resp.data
 		}
@@ -459,7 +463,7 @@ def getDevices() {
 	if (data) {
 		def devices = data.item
 		
-		
+		log.debug data
 		return devices.findAll { d -> supportedDeviceTypes.find { supported -> supported == d.deviceType } }
 	}
 }
