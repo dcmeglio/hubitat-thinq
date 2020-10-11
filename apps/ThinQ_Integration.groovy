@@ -189,7 +189,7 @@ def prefDevices() {
 	state.foundDevices = []
 	devices.each { 
 		deviceList << ["${it.deviceId}":it.alias] 
-		state.foundDevices << [id: it.deviceId, name: it.alias, type: it.deviceType]
+		state.foundDevices << [id: it.deviceId, name: it.alias, type: it.deviceType, version: it.platformType]
 	}
 	
 	return dynamicPage(name: "prefDevices", title: "LG ThinQ OAuth",  uninstall:false, install: true) {
@@ -459,14 +459,10 @@ def oauthInitialize() {
 }
 
 def getDevices() {
-	def data = lgEdmPost(state.thinq1Url + "/member/login", [
-		countryCode: state.countryCode,
-        langCode: state.langCode,
-        loginType: "EMP",
-        token: state.access_token
-	])
+	def data = lgAPIGet("${state.thinqUrl}/service/application/dashboard")
 	if (data) {
 		def devices = data.item
+
 		
 		log.debug data
 		return devices.findAll { d -> supportedDeviceTypes.find { supported -> supported == d.deviceType } }
@@ -494,9 +490,15 @@ def retrieveMqttDetails() {
 
 def processMqttMessage(dev, payload) {
 	switch (payload.type) {
+		case "monitoring":
+			return processDeviceMonitoring(payload)
 		default:
 			log.debug "Unknown MQTT Message ${payload}"
 	}
+}
+
+def processDeviceMonitoring(payload) {
+	log.debug "Monitoring event: ${payload}"
 }
 
 def logDebug(msg) {
