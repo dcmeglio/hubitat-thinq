@@ -319,7 +319,16 @@ def lgAPIGet(uri) {
 			resp ->
 			if (resp.data.resultCode == "0000")
 				result = resp.data?.result
-			else if (responseCodeText[resp.data.resultCode] == "EMP_AUTHENTICATION_FAILED") {
+			else {
+				log.error "Error calling ${uri}: " + responseCodeText[resp.data.resultCode]
+			}
+		}
+		return result
+	}
+	catch (Exception e) {
+		def data = e?.getResponse()?.data
+		if (data != null) {
+			if (responseCodeText[data.resultCode] == "EMP_AUTHENTICATION_FAILED") {
 				def refreshResult = getAccessToken([refresh_token: state.refresh_token, grant_type: "refresh_token"])
 				if (refreshResult.toString().startsWith("LG.OAUTH.EC")) {
 					state.access_token = null
@@ -333,16 +342,8 @@ def lgAPIGet(uri) {
 						return lgAPIGet(uri)
 				}
 			}
-			else {
-				log.error "Error calling ${uri}: " + responseCodeText[resp.data.resultCode]
-			}
-		}
-		return result
-	}
-	catch (Exception e) {
-		def data = e?.getResponse()?.data
-		if (data != null) {
-			log.error "Error calling ${uri}: " + responseCodeText[data.resultCode]
+			else
+				log.error "Error calling ${uri}: " + responseCodeText[data.resultCode]
 		}
 	}
 }
@@ -542,7 +543,22 @@ def lgEdmPost(url, body) {
 	catch (Exception e) {
 		def data = e?.getResponse()?.data
 		if (data != null) {
-			log.error "Error retrieving ${url}: " + responseCodeText[data.lgedmRoot.returnCd]
+				if (responseCodeText[data.lgedmRoot.returnCd] == "EMP_AUTHENTICATION_FAILED") {
+				def refreshResult = getAccessToken([refresh_token: state.refresh_token, grant_type: "refresh_token"])
+				if (refreshResult.toString().startsWith("LG.OAUTH.EC")) {
+					state.access_token = null
+					log.error "Refresh token failed ${refreshResult}"
+				}
+				else {
+					state.access_token = refreshResult.access_token
+					if (refreshResult.refresh_token)
+						state.refresh_token = refreshResult.refresh_token
+					if (state.access_token != null)
+						return lgEdmPost(url, body)
+				}
+			}
+			else
+				log.error "Error retrieving ${url}: " + responseCodeText[data.lgedmRoot.returnCd]
 		}
 	}
 
@@ -668,7 +684,7 @@ def cleanupChildDevices()
 {
 	for (d in getChildDevices())
 	{
-		def deviceId = device.deviceNetworkId.replace("thinq:","")
+		def deviceId = d.deviceNetworkId.replace("thinq:","")
 		
 		def deviceFound = false
 		for (dev in thinqDevices)
