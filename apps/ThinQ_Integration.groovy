@@ -179,7 +179,8 @@ def prefDevices() {
 	}
 	state.mqttServer = getMqttServer().mqttServer
 	
-	log.debug register()
+	log.debug "Register result: " + register()
+	log.debug "v1 Login result: " + loginv1()
 	def certAndSubData = getCertAndSub()
 	state.cert = certAndSubData.certificatePem
 	state.subscriptions = certAndSubData.subscriptions
@@ -419,37 +420,53 @@ def getAccessToken(body) {
 	return result
 }
 
+def loginv1() {
+	def data = lgEdmPost(state.thinq1Url + "/member/login", [
+		countryCode: state.countryCode,
+        langCode: state.langCode,
+        loginType: "EMP",
+        token: state.access_token
+	])
+	if (data) {
+		state.jsession = data.jsessionId
+		return data
+	}
+}
+
 def lgEdmPost(url, body) {
 	def data
+	def headers = [
+			"x-thinq-application-key": "wideq",
+			"x-thinq-security-key": "nuts_securitykey",
+			"Accept": "application/json",
+			"x-thinq-app-os": "IOS",
+			"x-thinq-app-ver": "3.5.0000",
+			"x-thinq-app-level": "PRD",
+			"x-country-code": "US",
+			"x-message-id": "wideq",
+			"x-api-key": "VGhpblEyLjAgU0VSVklDRQ==",
+			"x-thinq-app-type": "NUTS",
+			"x-service-code": "SVC202",
+			"x-service-phase": "OP",
+			"x-client-id": state.client_id,
+			"x-language-code": "en-US",
+			"Host": "aic-service.lgthinq.com:46030"
+		]
+	if (state.access_token)
+		headers << ["x-thinq-token": state.access_token]
+	if (state.jsession) 
+		headers << ["x-thinq-jsessionId": state.jsession]
 
-		httpPost([
-			uri: url,
-			headers: [
-		//		"Host": "kic.lgthinq.com:46030",
-		//		"x-thinq-application-key": "wideq",
-		//		"x-thinq-security-key": "nuts_securitykey",
-		//		"Accept": "application/json"
-				"Accept": "application/json",
-				"x-thinq-app-os": "IOS",
-				"x-thinq-app-ver": "3.5.0000",
-				"x-thinq-app-level": "PRD",
-				"x-country-code": "US",
-				"x-message-id": "wideq",
-				"x-api-key": "VGhpblEyLjAgU0VSVklDRQ==",
-				"x-thinq-app-type": "NUTS",
-				"x-service-code": "SVC202",
-				"x-service-phase": "OP",
-				"x-client-id": state.client_id,
-				"x-language-code": "en-US",
-				"Host": "aic-service.lgthinq.com:46030"
-			],
-			requestContentType: "application/json",
-			body: [
-				lgedmRoot: body
-			],
-		]) { resp -> 
-			data = resp.data?.lgedmRoot
-		}
+	httpPost([
+		uri: url,
+		headers: headers,
+		requestContentType: "application/json",
+		body: [
+			lgedmRoot: body
+		],
+	]) { resp -> 
+		data = resp.data?.lgedmRoot
+	}
 	
 	return data
 }
@@ -473,6 +490,43 @@ def findMasterDevice() {
     return getChildDevices().find { 
         it.hasCapability("Initialize") && it.getDataValue("master") == "true"
     }
+}
+
+def getDeviceThinQVersion(dev) {
+	def thinqDeviceId = dev?.deviceNetworkId?.replace("thinq:", "")
+
+	if (thinqDeviceId) {
+		return state.foundDevices.find { it.id == thinqDeviceId}?.version
+	}
+	return null
+}
+
+def registerRTIMonitoring(dev) {
+	if (getDeviceThinQVersion(dev) == "thinq1") {
+		def thinqDeviceId = dev?.deviceNetworkId?.replace("thinq:", "")
+		def resultData = lgEdmPost("${state.thinq1Url}/rti/rtiMon", [
+			"cmd": "Mon",
+            "cmdOpt": "Start",
+            "deviceId": thinqDeviceId,
+            "workId": UUID.randomUUID().toString()
+		])
+		if (resultData.returnCd == "0000") {
+			dev.updateDataValue("workId", resultData.workId)
+		}
+	}
+}
+
+def stopRTIMonitoring(dev) {
+	if (getDeviceThinQVersion(dev) == "thinq1" && dev.getDataValue("workId") != null) {
+		def thinqDeviceId = dev?.deviceNetworkId?.replace("thinq:", "")
+		def resultData = lgEdmPost("${state.thinq1Url}/rti/rtiMon", [
+			"cmd": "Mon",
+            "cmdOpt": "Stop",
+            "deviceId": thinqDeviceId,
+            "workId": dev.getDataValue("workId")
+		])
+		dev.removeDataValue("workId")
+	}
 }
 
 def retrieveMqttDetails() {

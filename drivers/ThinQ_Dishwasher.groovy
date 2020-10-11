@@ -14,11 +14,19 @@ metadata {
 
 import groovy.json.JsonSlurper
 
-def initialize() {
-    if (interfaces.mqtt.isConnected())
-		interfaces.mqtt.disconnect()
+def uninstalled() {
+    parent.stopRTIMonitoring(device)
+}
 
-    mqttConnectUntilSuccessful()
+def initialize() {
+    if (getDataValue("master") == "true") {
+        if (interfaces.mqtt.isConnected())
+            interfaces.mqtt.disconnect()
+
+        mqttConnectUntilSuccessful()
+    }
+
+    parent.registerRTIMonitoring(device)
 }
 
 def mqttConnectUntilSuccessful() {
