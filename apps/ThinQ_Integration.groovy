@@ -187,13 +187,20 @@ def prefDevices() {
 		state.refresh_token = result.refresh_token
 	}
 	
-	log.debug "Register result: " + register()
-	log.debug "v1 Login result: " + loginv1()
+	register()
+	if (loginv1() == null)
+		return returnErrorPage("Unable to login to LG ThinQ. Please check the logs for more details, verify your credentials, and follow the steps on the first screen and try again.", "prefMain")
+
 	def certAndSubData = getCertAndSub()
+	if (certAndSubData == null)
+		return returnErrorPage("Unable to generate a certificate. Please check the logs for more details, verify your credentials, and follow the steps on the first screen and try again.", "prefMain")
 	state.cert = certAndSubData.certificatePem
 	state.subscriptions = certAndSubData.subscriptions
 
 	def devices = getDevices()
+	if (devices == null)
+		return returnErrorPage("Unable to retrieve your devices. Please check the logs for more details, verify your credentials, and follow the steps on the first screen and try again.", "prefMain")
+
 	def deviceList = [:]
 	state.foundDevices = []
 	devices.each { 
@@ -306,7 +313,7 @@ def lgAPIGet(uri) {
 			if (resp.data.resultCode == "0000")
 				result = resp.data?.result
 			else {
-				log.error "Error calling ${uri}: " + responseCodeText[data.resultCode]
+				log.error "Error calling ${uri}: " + responseCodeText[resp.data.resultCode]
 			}
 		}
 		return result
@@ -320,7 +327,7 @@ def lgAPIGet(uri) {
 }
 
 def lgAPIPost(uri, body) {
-	def result
+	def result = null
 	def headers = getStandardHeaders()
 
 	try
@@ -334,7 +341,10 @@ def lgAPIPost(uri, body) {
 			]
 		) {
 			resp ->
-			result = resp.data?.result
+				if (resp.data.resultCode == "0000")
+					result = resp.data?.result
+				else
+					log.error "Error calling ${uri}: " + responseCodeText[resp.data.resultCode]
 		}
 		return result
 	}
@@ -387,7 +397,7 @@ def getMqttServer() {
 			if (resp.data.resultCode == "0000")
 				result = resp.data?.result
 			else
-				log.error "Error retrieving MQTT: " + responseCodeText[data.resultCode]
+				log.error "Error retrieving MQTT: " + responseCodeText[resp.data.resultCode]
 
 		}
 	}
@@ -470,7 +480,7 @@ def loginv1() {
 }
 
 def lgEdmPost(url, body) {
-	def data
+	def result
 	def headers = [
 			"x-thinq-application-key": "wideq",
 			"x-thinq-security-key": "nuts_securitykey",
@@ -493,18 +503,29 @@ def lgEdmPost(url, body) {
 	if (state.jsession) 
 		headers << ["x-thinq-jsessionId": state.jsession]
 
-	httpPost([
-		uri: url,
-		headers: headers,
-		requestContentType: "application/json",
-		body: [
-			lgedmRoot: body
-		],
-	]) { resp -> 
-		data = resp.data?.lgedmRoot
+	try {
+		httpPost([
+			uri: url,
+			headers: headers,
+			requestContentType: "application/json",
+			body: [
+				lgedmRoot: body
+			],
+		]) { resp -> 
+			if (resp.data?.lgedmRoot.returnCd == "0000")
+				result = resp.data?.lgedmRoot
+			else 
+				log.error "Error calling ${url}: " + responseCodeText[resp.data?.lgedmRoot.returnCd]
+		}
 	}
-	
-	return data
+	catch (Exception e) {
+		def data = e?.getResponse()?.data
+		if (data != null) {
+			log.error "Error retrieving ${url}: " + responseCodeText[data.lgedmRoot.returnCd]
+		}
+	}
+
+	return result
 }
 
 def oauthInitialize() {
@@ -516,10 +537,9 @@ def getDevices() {
 	if (data) {
 		def devices = data.item
 
-		
-		log.debug data
 		return devices.findAll { d -> supportedDeviceTypes.find { supported -> supported == d.deviceType } }
 	}
+	return null
 }
 
 def findMasterDevice() {
