@@ -258,6 +258,7 @@ def initialize() {
 				driverName = "LG ThinQ Dishwasher"
 				break
 		}
+		hasV1Device = deviceDetails.version == "thinq1"
 		if (!getChildDevice("thinq:"+deviceDetails.id)) {
 			def child = addChildDevice("dcm.thinq", driverName, "thinq:" + deviceDetails.id, 1234, ["name": deviceDetails.name,isComponent: false])
 			if (!findMasterDevice() && deviceDetails.version == "thinq2") {
