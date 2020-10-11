@@ -234,10 +234,15 @@ def updated() {
 
 def uninstalled() {
 	unschedule()
+	for (d in getChildDevices())
+	{
+		deleteChildDevice(d.deviceNetworkId)
+	}
 }
 
 def initialize() {
 	def hasV1Device = false
+	cleanupChildDevices()
 	for (d in thinqDevices) {
 		def deviceDetails = state.foundDevices.find { it.id == d }
 		def driverName = ""
@@ -641,6 +646,29 @@ def refreshV1Devices() {
 	}
 	if (workList.size() > 0) {
 		getRTIData(workList)
+	}
+}
+
+def cleanupChildDevices()
+{
+	for (d in getChildDevices())
+	{
+		def deviceId = device.deviceNetworkId.replace("thinq:","")
+		
+		def deviceFound = false
+		for (dev in thinqDevices)
+		{
+			if (dev == deviceId)
+			{
+				deviceFound = true
+				break
+			}
+		}
+				
+		if (deviceFound == true)
+			continue
+			
+		deleteChildDevice(d.deviceNetworkId)
 	}
 }
 
