@@ -117,6 +117,9 @@ def prefMain() {
 		state.client_id = (UUID.randomUUID().toString()+UUID.randomUUID().toString()).replaceAll(/-/,"")
 	def countries = getCountries()
 
+	if (countries == null)
+		return returnErrorPage("Unable to connect to LG ThinQ at this time. Please try again later. Check the app logs for more details.", null)
+
 	def countriesList = [:]
 	countries.each { countriesList << ["${it.langCode}": it.description]}
 
@@ -124,14 +127,15 @@ def prefMain() {
 		state.langCode = region
 		state.countryCode = countries.find { it.langCode == region}?.countryCode
 		def apiGatewayResult = getGatewayDetails()
-		log.debug apiGatewayResult
+		if (apiGatewayResult == null)
+			return returnErrorPage("Unable to connect to LG ThinQ at this time. Please try again later. Check the app logs for more details.", null)
+		
 		state.oauthUrl = apiGatewayResult.oauthUri
 		state.empUrl = apiGatewayResult.empUri
 		state.thinqUrl = apiGatewayResult.thinq2Uri
 		state.thinq1Url = apiGatewayResult.thinq1Uri
 		state.empSpxUri = apiGatewayResult.empSpxUri
 		state.rtiUri = apiGatewayResult.rtiUri
-
 	}
 
 	return dynamicPage(name: "prefMain", title: "LG ThinQ OAuth", nextPage: "prefCert", uninstall:false, install: false) {
@@ -213,10 +217,16 @@ def installed() {
 }
 
 def updated() {
+	unschedule()
 	initialize()
 }
 
+def uninstalled() {
+	unschedule()
+}
+
 def initialize() {
+	def hasV1Device = false
 	for (d in thinqDevices) {
 		def deviceDetails = state.foundDevices.find { it.id == d }
 		def driverName = ""
@@ -239,14 +249,19 @@ def initialize() {
 		}
 		if (!getChildDevice("thinq:"+deviceDetails.id)) {
 			def child = addChildDevice("dcm.thinq", driverName, "thinq:" + deviceDetails.id, 1234, ["name": deviceDetails.name,isComponent: false])
-			if (!findMasterDevice()) {
+			if (!findMasterDevice() && deviceDetails.version == "thinq2") {
 				child.updateDataValue("master", "true")
 				child.initialize()
 			}
-			else if (child.getDataValue("master") != "true")
+			else if (child.getDataValue("master") != "true") {
 				child.updateDataValue("master", "false")
+				child.initialize()
+			}
 		}
 	}
+
+	if (hasV1Device)
+		schedule("0 */1 * * * ? *", refreshV1Devices)
 }
 
 def getStandardHeaders() {
@@ -284,7 +299,11 @@ def lgAPIGet(uri) {
 			]
 		) {
 			resp ->
-			result = resp.data?.result
+			if (resp.data.resultCode == "0000")
+				result = resp.data?.result
+			else {
+				log.error "Error calling ${uri}: " + responseCodeText[data.resultCode]
+			}
 		}
 		return result
 	}
@@ -529,6 +548,25 @@ def stopRTIMonitoring(dev) {
 	}
 }
 
+def getRTIWorkList(dev) {}
+
+def getRTIData(workList) {
+	def resultData = lgEdmPost("${state.thinq1Url}/rti/rtiMon", [
+		"cmd": "Mon",
+		"cmdOpt": "Stop",
+		"workList": workList
+	])
+	// No data available (yet)
+	if (resultData.returnCode == null)
+		return
+	else if (resultData.returnCode != "0000") {
+		log.error "Error during RTI Data: "
+	}
+	else
+	log.debug "RTI Data: ${resultData.returnData}"
+	
+}
+
 def retrieveMqttDetails() {
 	def caCert = ""
 	httpGet([
@@ -553,6 +591,19 @@ def processMqttMessage(dev, payload) {
 
 def processDeviceMonitoring(payload) {
 	log.debug "Monitoring event: ${payload}"
+}
+
+def refreshV1Devices() {
+	def workList = []
+	for (dev in getChildDevices()) {
+		def thinqDeviceId = dev?.deviceNetworkId?.replace("thinq:", "")
+		if (getDeviceThinQVersion(dev) == "thinq1" && dev.getDataValue("workId") != null) {
+			workList << ["deviceId": thinqDeviceId, "workId": dev.getDataValue("workId")]
+		}
+	}
+	if (workList.size() > 0) {
+		getRTIData(workList)
+	}
 }
 
 def logDebug(msg) {
