@@ -129,6 +129,10 @@ def prefMain() {
 		def apiGatewayResult = getGatewayDetails()
 		if (apiGatewayResult == null)
 			return returnErrorPage("Unable to connect to LG ThinQ at this time. Please try again later. Check the app logs for more details.", null)
+
+		def mqttResult = getMqttServer()
+		if (mqttResult == null)
+			return returnErrorPage("Unable to connect to LG ThinQ at this time. Please try again later. Check the app logs for more details.", null)
 		
 		state.oauthUrl = apiGatewayResult.oauthUri
 		state.empUrl = apiGatewayResult.empUri
@@ -136,6 +140,7 @@ def prefMain() {
 		state.thinq1Url = apiGatewayResult.thinq1Uri
 		state.empSpxUri = apiGatewayResult.empSpxUri
 		state.rtiUri = apiGatewayResult.rtiUri
+		state.mqttServer = mqttResult.mqttServer
 	}
 
 	return dynamicPage(name: "prefMain", title: "LG ThinQ OAuth", nextPage: "prefCert", uninstall:false, install: false) {
@@ -181,7 +186,6 @@ def prefDevices() {
 		state.access_token = result.access_token
 		state.refresh_token = result.refresh_token
 	}
-	state.mqttServer = getMqttServer().mqttServer
 	
 	log.debug "Register result: " + register()
 	log.debug "v1 Login result: " + loginv1()
@@ -367,18 +371,31 @@ def getGatewayDetails() {
 }
 
 def getMqttServer() {
-	def result
-	httpGet(
-		[
-			uri: "https://common.lgthinq.com",
-			path: "/route",
-			headers: [
-				"x-country-code": state.countryCode,
-				"x-service-phase": "OP"
+	def result = null
+	try
+	{
+		httpGet(
+			[
+				uri: "https://common.lgthinq.com",
+				path: "/route",
+				headers: [
+					"x-country-code": state.countryCode,
+					"x-service-phase": "OP"
+				]
 			]
-		]
-	) { resp ->
-		result = resp.data?.result
+		) { resp ->
+			if (resp.data.resultCode == "0000")
+				result = resp.data?.result
+			else
+				log.error "Error retrieving MQTT: " + responseCodeText[data.resultCode]
+
+		}
+	}
+	catch (Exception e) {
+		def data = e?.getResponse()?.data
+		if (data != null) {
+			log.error "Error retrieving MQTT: " + responseCodeText[data.resultCode]
+		}
 	}
 	return result
 }
