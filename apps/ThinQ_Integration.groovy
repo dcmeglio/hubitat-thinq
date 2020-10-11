@@ -319,6 +319,20 @@ def lgAPIGet(uri) {
 			resp ->
 			if (resp.data.resultCode == "0000")
 				result = resp.data?.result
+			else if (responseCodeText[resp.data.resultCode] == "EMP_AUTHENTICATION_FAILED") {
+				def refreshResult = getAccessToken([refresh_token: state.refresh_token, grant_type: "refresh_token"])
+				if (refreshResult.toString().startsWith("LG.OAUTH.EC")) {
+					state.access_token = null
+					log.error "Refresh token failed ${refreshResult}"
+				}
+				else {
+					state.access_token = refreshResult.access_token
+					if (refreshResult.refresh_token)
+						state.refresh_token = refreshResult.refresh_token
+					if (state.access_token != null)
+						return lgAPIGet(uri)
+				}
+			}
 			else {
 				log.error "Error calling ${uri}: " + responseCodeText[resp.data.resultCode]
 			}
