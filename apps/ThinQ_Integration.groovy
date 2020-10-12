@@ -622,14 +622,12 @@ def stopRTIMonitoring(dev) {
 	}
 }
 
-def getRTIWorkList(dev) {}
-
 def getRTIData(workList) {
-	def resultData = lgEdmPost("${state.thinq1Url}/rti/rtiMon", [
-		"cmd": "Mon",
-		"cmdOpt": "Stop",
+	def resultData = lgEdmPost("${state.thinq1Url}/rti/rtiResult", [
 		"workList": workList
 	])
+	log.debug resultData
+	return
 	// No data available (yet)
 	if (resultData.returnCode == null)
 		return
@@ -637,8 +635,7 @@ def getRTIData(workList) {
 		log.error "Error during RTI Data: "
 	}
 	else
-	log.debug "RTI Data: ${resultData.returnData}"
-	
+		log.debug "RTI Data: ${resultData.returnData}"
 }
 
 def retrieveMqttDetails() {
@@ -657,14 +654,15 @@ def retrieveMqttDetails() {
 def processMqttMessage(dev, payload) {
 	switch (payload.type) {
 		case "monitoring":
-			return processDeviceMonitoring(payload)
+			def targetDevice = getChildDevice("thinq:" + payload.deviceId)
+			return processDeviceMonitoring(targetDevice, payload)
 		default:
 			log.debug "Unknown MQTT Message ${payload}"
 	}
 }
 
-def processDeviceMonitoring(payload) {
-	log.debug "Monitoring event: ${payload}"
+def processDeviceMonitoring(dev, payload) {
+	log.debug "Monitoring event: ${dev?.deviceNetworkId} ${payload}"
 }
 
 def refreshV1Devices() {
