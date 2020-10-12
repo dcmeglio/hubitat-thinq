@@ -205,8 +205,7 @@ def prefDevices() {
 	state.foundDevices = []
 	devices.each { 
 		deviceList << ["${it.deviceId}":it.alias] 
-		log.debug it
-		state.foundDevices << [id: it.deviceId, name: it.alias, type: it.deviceType, version: it.platformType, modelJson: it.modelJsonUri]
+		state.foundDevices << [id: it.deviceId, name: it.alias, type: it.deviceType, version: it.platformType, modelJson: getModelMonitoringInfo(it.modelJsonUri)]
 	}
 	
 	return dynamicPage(name: "prefDevices", title: "LG ThinQ OAuth",  uninstall:false, install: true) {
@@ -304,6 +303,19 @@ def getStandardHeaders() {
 	if (state.user_number != null)
 		headers << ["x-user-no": state.user_number]
 	return headers
+}
+
+def getModelMonitoringInfo(url) {
+	def result = null
+	httpGet(
+			[
+				uri: url
+			]
+		) {
+			resp ->
+			result = resp?.data?.Monitoring
+		}
+	return result
 }
 
 def lgAPIGet(uri) {
@@ -668,8 +680,6 @@ def getRTIData(workList) {
 				}
 			}
 		}
-	
-		log.debug "RTI Data: ${resultData.returnData}"
 	}
 }
 
