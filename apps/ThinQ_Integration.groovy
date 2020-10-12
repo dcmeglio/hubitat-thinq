@@ -204,6 +204,7 @@ def prefDevices() {
 	def deviceList = [:]
 	state.foundDevices = []
 	devices.each { 
+		log.debug "MODEL JSON -- PLEASE POST IN THREAD ${it.modelJsonUri}"
 		deviceList << ["${it.deviceId}":it.alias] 
 		state.foundDevices << [id: it.deviceId, name: it.alias, type: it.deviceType, version: it.platformType, modelJson: getModelJson(it.modelJsonUri)]
 	}
