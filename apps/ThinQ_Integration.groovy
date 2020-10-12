@@ -730,6 +730,7 @@ def decodeBinaryRTIMessage(protocol, modelInfo, data) {
 def getParsedValue(value, param, modelInfo) {
 	if (param == null)
 		return value
+
 	switch (param.type) {
 		case "Bit":
 			def result = []
@@ -741,10 +742,12 @@ def getParsedValue(value, param, modelInfo) {
 		case "Range":
 			return value
 		case "Enum":
-			return param.option[value.toString()] ?: value
+			return param?.option[value.toString()] ?: value
 		case "Reference":
 			def refField = param.option[0]
-			return modelInfo."${refField}"."${value}"?._comment ?: value
+			if (refField)
+				return modelInfo."${refField}"."${value}"?._comment ?: value
+			return value
 		default:
 			return value
 	}
