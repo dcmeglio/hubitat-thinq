@@ -534,6 +534,7 @@ def lgEdmPost(url, body) {
 				lgedmRoot: body
 			],
 		]) { resp -> 
+		log.debug "Raw: " + resp.data
 			if (resp.data?.lgedmRoot.returnCd == "0000")
 				result = resp.data?.lgedmRoot
 			else if (responseCodeText[resp.data.lgedmRoot.returnCd] == "EMP_AUTHENTICATION_FAILED") {
@@ -638,6 +639,7 @@ def stopRTIMonitoring(dev) {
 }
 
 def getRTIData(workList) {
+	log.debug "worklist:" + workList
 	def resultData = lgEdmPost("${state.thinq1Url}/rti/rtiResult", [
 		"workList": workList
 	])
