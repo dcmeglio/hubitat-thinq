@@ -536,6 +536,21 @@ def lgEdmPost(url, body) {
 		]) { resp -> 
 			if (resp.data?.lgedmRoot.returnCd == "0000")
 				result = resp.data?.lgedmRoot
+			else if (responseCodeText[resp.data.lgedmRoot.returnCd] == "EMP_AUTHENTICATION_FAILED") {
+				def refreshResult = getAccessToken([refresh_token: state.refresh_token, grant_type: "refresh_token"])
+				if (refreshResult.toString().startsWith("LG.OAUTH.EC")) {
+					state.access_token = null
+					log.error "Refresh token failed ${refreshResult}"
+				}
+				else {
+					state.access_token = refreshResult.access_token
+					if (refreshResult.refresh_token)
+						state.refresh_token = refreshResult.refresh_token
+					//if (state.access_token != null)
+					//	return lgEdmPost(url, body)
+				}
+			}
+
 			else 
 				log.error "Error calling ${url}: " + responseCodeText[resp.data?.lgedmRoot.returnCd]
 		}
