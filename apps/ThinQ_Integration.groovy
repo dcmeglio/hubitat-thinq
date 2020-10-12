@@ -205,7 +205,7 @@ def prefDevices() {
 	state.foundDevices = []
 	devices.each { 
 		deviceList << ["${it.deviceId}":it.alias] 
-		state.foundDevices << [id: it.deviceId, name: it.alias, type: it.deviceType, version: it.platformType, modelJson: getModelMonitoringInfo(it.modelJsonUri)]
+		state.foundDevices << [id: it.deviceId, name: it.alias, type: it.deviceType, version: it.platformType, modelJson: getModelJson(it.modelJsonUri)]
 	}
 	
 	return dynamicPage(name: "prefDevices", title: "LG ThinQ OAuth",  uninstall:false, install: true) {
@@ -305,16 +305,22 @@ def getStandardHeaders() {
 	return headers
 }
 
-def getModelMonitoringInfo(url) {
+def getModelJson(url) {
 	def result = null
-	httpGet(
+	try
+	{
+		httpGet(
 			[
 				uri: url
 			]
 		) {
 			resp ->
-			result = resp?.data?.Monitoring
+			result = resp?.data
 		}
+	}
+	catch (Exception e) {
+		log.error "Error retrieving model json: ${url} ${e}"
+	}
 	return result
 }
 
@@ -656,6 +662,7 @@ def stopRTIMonitoring(dev) {
 }
 
 def getRTIData(workList) {
+	def result = [:]
 	def resultData = lgEdmPost("${state.thinq1Url}/rti/rtiResult", [
 		"workList": workList
 	])
@@ -673,14 +680,82 @@ def getRTIData(workList) {
 			def format = workItem.format
 			def data = workItem.returnData.decodeBase64()
 
-			if (returnCode == "0000") {
+			if (returnCode == "0000" || returnCode == "0106") {
 				def dev = getChildDevice("thinq:" + deviceId)
 				if (dev != null) {
-					
+					modelInfo = state.foundDevices.find { it.id == deviceId }?.modelJson
+
+					if (modelInfo) {
+						if (modelInfo?.Monitoring?.type == "BINARY(BYTE)") {
+							result << ["${deviceId}": decodeBinaryRTIMessage(modelInfo.Monitoring.protocol, modelInfo, data)]
+						}
+						else {
+							// It's already JSON (I think?)
+							result << ["${deviceId}": data]
+						}
+					}
 				}
 			}
 		}
 	}
+	return result
+}
+
+def decodeBinaryRTIMessage(protocol, modelInfo, data) {
+	def output = [:]
+	def values = modelInfo.Value
+	for (parameter in protocol) {
+		def start = parameter.startByte
+		def end = parameter.startByte + parameter.length - 1
+		def name = parameter.value
+		def default = parameter.default
+
+		output."$name" = default
+		if (end < data?.size()) {
+			def bytes = data[start..end]
+
+			def value = 0
+			for (def i = 0; i < bytes.size(); i++) {
+				value = (value << 8) + bytes[i]
+			}
+			
+			def paramDefinition = getValueDefinition(name, values)
+			def parsedValue = getParsedValue(value, paramDefinition, modelInfo)
+			output."$name" = parsedValue
+		}
+	}
+	return output
+}
+
+def getParsedValue(value, param, modelInfo) {
+	if (param == null)
+		return value
+	switch (param.type) {
+		case "Bit":
+			def result = []
+			for (bit in param.option) {
+				if (value & (1<<bit.startbit))
+					result << bit.value
+			}
+			return result
+		case "Range":
+			return value
+		case "Enum":
+			return param.option[value.toString()] ?: value
+		case "Reference":
+			def refField = param.option[0]
+			return modelInfo."${refField}"."${value}"?._comment ?: value
+		default:
+			return value
+	}
+}
+
+def getValueDefinition(name, values) {
+	for (item in values.keySet()) {
+		if (item == name)
+			return values[item]
+	}
+	return null
 }
 
 def retrieveMqttDetails() {
@@ -719,7 +794,8 @@ def refreshV1Devices() {
 		}
 	}
 	if (workList.size() > 0) {
-		getRTIData(workList)
+		def rtiData = getRTIData(workList)
+		
 	}
 }
 
