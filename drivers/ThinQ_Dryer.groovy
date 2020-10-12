@@ -9,6 +9,17 @@ metadata {
     definition(name: "LG ThinQ Dryer", namespace: "dcm.thinq", author: "dmeglio@gmail.com") {
         capability "Sensor"
         capability "Initialize"
+
+        attribute "runTime", "number"
+        attribute "runTimeDisplay", "string"
+        attribute "remainingTime", "number"
+        attribute "remainingTimeDisplay", "string"
+        attribute "currentState", "string"
+        attribute "error", "string"
+        attribute "course", "string"
+        attribute "dryLevel", "string"
+        attribute "temperatureLevel", "string"
+        attribute "timeDry", "string"
     }
 }
 
@@ -77,5 +88,27 @@ def mqttClientStatus(String message) {
 }
 
 def processStateData(data) {
-    
+    def runTime = 0
+    def remainingTime = 0
+    def currentState = data["State"] ?: ""
+    def dryLevel = data["DryLevel"] ?: ""
+    def temperatureLevel = data["TempControl"] ?: ""
+    def error 
+
+    remainingTime += (data["Remain_Time_H"]*60*60)
+    remainingTime += (data["Remain_Time_M"]*60)
+
+    runTime += (data["Initial_Time_H"]*60*60)
+    runTime += (data["Initial_Time_M"]*60)
+
+    sendEvent(name: "runTime", value: runTime)
+    sendEvent(name: "runTimeDisplay", value: "${data["Remain_Time_H"]}:${data["Remain_Time_M"]}")
+    sendEvent(name: "remainingTime", value: remainingTime)
+    sendEvent(name: "remainingTimeDisplay", value: "${data["Initial_Time_H"]}:${data["Initial_Time_M"]}")
+    sendEvent(name: "currentState", value: currentState.replaceAll(/^@WM_STATE_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase())
+    sendEvent(name: "error", value: data["Error"]?.toLowerCase())
+    sendEvent(name: "course", value: data["Course"] != 0 ? data["Course"]?.toLowerCase() : "none")
+    sendEvent(name: "dryLevel", value: dryLevel.replaceAll(/^@WM_DRY27_DRY_LEVEL_/,"").replaceAll(/_W$/,"").replaceAll(/_/, " ").toLowerCase())
+    sendEvent(name: "temperatureLevel", value: temperatureLevel.replaceAll(/^@WM_DRY27_BUTTON_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase())
+    sendEvent(name: "timeDry", value: data["TimeDry"])
 }
