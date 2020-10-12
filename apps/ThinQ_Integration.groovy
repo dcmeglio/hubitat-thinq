@@ -205,7 +205,8 @@ def prefDevices() {
 	state.foundDevices = []
 	devices.each { 
 		deviceList << ["${it.deviceId}":it.alias] 
-		state.foundDevices << [id: it.deviceId, name: it.alias, type: it.deviceType, version: it.platformType]
+		log.debug it
+		state.foundDevices << [id: it.deviceId, name: it.alias, type: it.deviceType, version: it.platformType, modelJson: it.modelJsonUri]
 	}
 	
 	return dynamicPage(name: "prefDevices", title: "LG ThinQ OAuth",  uninstall:false, install: true) {
@@ -501,7 +502,7 @@ def loginv1() {
 	}
 }
 
-def lgEdmPost(url, body) {
+def lgEdmPost(url, body, refresh = true) {
 	def result
 	def headers = [
 			"x-thinq-application-key": "wideq",
@@ -534,7 +535,6 @@ def lgEdmPost(url, body) {
 				lgedmRoot: body
 			],
 		]) { resp -> 
-		log.debug "Raw: " + resp.data
 			if (resp.data?.lgedmRoot.returnCd == "0000")
 				result = resp.data?.lgedmRoot
 			else if (responseCodeText[resp.data.lgedmRoot.returnCd] == "EMP_AUTHENTICATION_FAILED") {
@@ -543,12 +543,14 @@ def lgEdmPost(url, body) {
 					state.access_token = null
 					log.error "Refresh token failed ${refreshResult}"
 				}
-				else {
+				else {					
 					state.access_token = refreshResult.access_token
 					if (refreshResult.refresh_token)
 						state.refresh_token = refreshResult.refresh_token
-					//if (state.access_token != null)
-					//	return lgEdmPost(url, body)
+
+					loginv1()
+					if (state.access_token != null && refresh)
+						return lgEdmPost(url, body, false)
 				}
 			}
 
@@ -619,9 +621,12 @@ def registerRTIMonitoring(dev) {
             "deviceId": thinqDeviceId,
             "workId": UUID.randomUUID().toString()
 		])
-		if (resultData.returnCd == "0000") {
+		if (resultData?.returnCd == "0000") {
 			dev.updateDataValue("workId", resultData.workId)
+			return resultData.workId
 		}
+		else
+			return null
 	}
 }
 
@@ -639,20 +644,33 @@ def stopRTIMonitoring(dev) {
 }
 
 def getRTIData(workList) {
-	log.debug "worklist:" + workList
 	def resultData = lgEdmPost("${state.thinq1Url}/rti/rtiResult", [
 		"workList": workList
 	])
-	log.debug "result": + resultData
-	return
+
 	// No data available (yet)
-	if (resultData.returnCode == null)
+	if (resultData.returnCd == null)
 		return
-	else if (resultData.returnCode != "0000") {
-		log.error "Error during RTI Data: "
+	else if (resultData.returnCd != "0000") {
+		log.error "Error during RTI Data: " + responseCodeText[resultData.returnCd]
 	}
-	else
+	else {
+		for (workItem in resultData.workList) {
+			def deviceId = workItem.deviceId
+			def returnCode = workItem.returnCode
+			def format = workItem.format
+			def data = workItem.returnData.decodeBase64()
+
+			if (returnCode == "0000") {
+				def dev = getChildDevice("thinq:" + deviceId)
+				if (dev != null) {
+					
+				}
+			}
+		}
+	
 		log.debug "RTI Data: ${resultData.returnData}"
+	}
 }
 
 def retrieveMqttDetails() {
