@@ -643,7 +643,7 @@ def getRTIData(workList) {
 	def resultData = lgEdmPost("${state.thinq1Url}/rti/rtiResult", [
 		"workList": workList
 	])
-	log.debug resultData
+	log.debug "result": + resultData
 	return
 	// No data available (yet)
 	if (resultData.returnCode == null)
