@@ -76,3 +76,6 @@ def mqttClientStatus(String message) {
     }
 }
 
+def processStateData(data) {
+    
+}

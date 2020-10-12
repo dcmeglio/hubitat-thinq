@@ -798,7 +798,11 @@ def refreshV1Devices() {
 	}
 	if (workList.size() > 0) {
 		def rtiData = getRTIData(workList)
-		
+		for (deviceId in rtiData.keySet()) {
+			def childDevice = getChildDevice("thinq:" + deviceId)
+			if (childDevice)
+				childDevice.processStateData(rtiData[deviceId])
+		}
 	}
 }
 
