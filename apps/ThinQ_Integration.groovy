@@ -631,6 +631,7 @@ def getDeviceThinQVersion(dev) {
 	return null
 }
 
+// V1 device methods
 def registerRTIMonitoring(dev) {
 	if (getDeviceThinQVersion(dev) == "thinq1") {
 		def thinqDeviceId = dev?.deviceNetworkId?.replace("thinq:", "")
@@ -780,6 +781,25 @@ def getValueDefinition(name, values) {
 	return null
 }
 
+def refreshV1Devices() {
+	def workList = []
+	for (dev in getChildDevices()) {
+		def thinqDeviceId = dev?.deviceNetworkId?.replace("thinq:", "")
+		if (getDeviceThinQVersion(dev) == "thinq1" && dev.getDataValue("workId") != null) {
+			workList << ["deviceId": thinqDeviceId, "workId": dev.getDataValue("workId")]
+		}
+	}
+	if (workList.size() > 0) {
+		def rtiData = getRTIData(workList)
+		for (deviceId in rtiData.keySet()) {
+			def childDevice = getChildDevice("thinq:" + deviceId)
+			if (childDevice && rtiData[deviceId] != null)
+				childDevice.processStateData(rtiData[deviceId])
+		}
+	}
+}
+
+// V2 device methods
 def retrieveMqttDetails() {
 	def caCert = ""
 	httpGet([
@@ -805,24 +825,6 @@ def processMqttMessage(dev, payload) {
 
 def processDeviceMonitoring(dev, payload) {
 	log.debug "Monitoring event: ${dev?.deviceNetworkId} ${payload}"
-}
-
-def refreshV1Devices() {
-	def workList = []
-	for (dev in getChildDevices()) {
-		def thinqDeviceId = dev?.deviceNetworkId?.replace("thinq:", "")
-		if (getDeviceThinQVersion(dev) == "thinq1" && dev.getDataValue("workId") != null) {
-			workList << ["deviceId": thinqDeviceId, "workId": dev.getDataValue("workId")]
-		}
-	}
-	if (workList.size() > 0) {
-		def rtiData = getRTIData(workList)
-		for (deviceId in rtiData.keySet()) {
-			def childDevice = getChildDevice("thinq:" + deviceId)
-			if (childDevice && rtiData[deviceId] != null)
-				childDevice.processStateData(rtiData[deviceId])
-		}
-	}
 }
 
 def cleanupChildDevices()
