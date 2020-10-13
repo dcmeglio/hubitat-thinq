@@ -668,9 +668,10 @@ def getRTIData(workList) {
 		"workList": workList
 	])
 
+	log.debug "RTI Data: ${resultData}"
 	// No data available (yet)
 	if (resultData.returnCd == null)
-		return
+		return result
 	else if (resultData.returnCd != "0000") {
 		log.error "Error during RTI Data: " + responseCodeText[resultData.returnCd]
 	}
@@ -679,20 +680,24 @@ def getRTIData(workList) {
 			def deviceId = workItem.deviceId
 			def returnCode = workItem.returnCode
 			def format = workItem.format
-			def data = workItem.returnData.decodeBase64()
+			def data = workItem.returnData?.decodeBase64()
 
-			if (returnCode == "0000" || returnCode == "0106") {
+			if (data != null) {
 				def dev = getChildDevice("thinq:" + deviceId)
 				if (dev != null) {
 					modelInfo = state.foundDevices.find { it.id == deviceId }?.modelJson
 
 					if (modelInfo) {
 						if (modelInfo?.Monitoring?.type == "BINARY(BYTE)") {
-							result << ["${deviceId}": decodeBinaryRTIMessage(modelInfo.Monitoring.protocol, modelInfo, data)]
+							log.debug "Parsed RTI Data: " + decodeBinaryRTIMessage(modelInfo.Monitoring.protocol, modelInfo, data)
+							result[deviceId] = decodeBinaryRTIMessage(modelInfo.Monitoring.protocol, modelInfo, data)
+						}
+						else if (modelInfo?.Monitoring?.type == "THINQ2") {
+							log.error "Received RTI Data for Thinq2 device ${deviceId} this shouldn't happen..."
 						}
 						else {
 							// It's already JSON (I think?)
-							result << ["${deviceId}": data]
+							result[deviceId] = data
 						}
 					}
 				}
@@ -748,7 +753,7 @@ def getParsedValue(value, param, modelInfo) {
 						if (value & (1<<i))
 	    					bitValue = bitValue + (value & (1<<i))
 					}
-					bitValue >>= start
+					bitValue >>= bit.startbit
 					result << ["${bit.value}": bitValue]
 				}
 			}
@@ -814,7 +819,7 @@ def refreshV1Devices() {
 		def rtiData = getRTIData(workList)
 		for (deviceId in rtiData.keySet()) {
 			def childDevice = getChildDevice("thinq:" + deviceId)
-			if (childDevice)
+			if (childDevice && rtiData[deviceId] != null)
 				childDevice.processStateData(rtiData[deviceId])
 		}
 	}
