@@ -709,9 +709,9 @@ def decodeBinaryRTIMessage(protocol, modelInfo, data) {
 		def start = parameter.startByte
 		def end = parameter.startByte + parameter.length - 1
 		def name = parameter.value
-		def default = parameter.default
+		def defaultValue = parameter.default
 
-		output."$name" = default
+		output."$name" = defaultValue
 		if (end < data?.size()) {
 			def bytes = data[start..end]
 
@@ -746,7 +746,7 @@ def getParsedValue(value, param, modelInfo) {
 					def bitValue = 0
 					for (def i = bit.startbit; i < bit.startbit + bit.length; i++) {
 						if (value & (1<<i))
-	    					bitValue = bitValue + (value & (1<<i)
+	    					bitValue = bitValue + (value & (1<<i))
 					}
 					bitValue >>= start
 					result << ["${bit.value}": bitValue]
