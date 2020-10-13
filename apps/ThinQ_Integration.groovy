@@ -637,6 +637,7 @@ def getParsedValue(value, param, modelInfo) {
 		return value
 
 	switch (param.type) {
+		case "Serveral": // Typo in the API
 		case "Bit":
 			def result = []
 			for (bit in param.option) {
