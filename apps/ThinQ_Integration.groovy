@@ -631,6 +631,54 @@ def getDeviceThinQVersion(dev) {
 	return null
 }
 
+// Common device state processing methods
+def getParsedValue(value, param, modelInfo) {
+	if (param == null)
+		return value
+
+	switch (param.type) {
+		case "Bit":
+			def result = []
+			for (bit in param.option) {
+				// Just a bit flag
+				if (bit.length == 1) {
+					if (value & (1<<bit.startbit))
+						result << bit.value
+				}
+				// Sub byte value
+				else {
+					def bitValue = 0
+					for (def i = bit.startbit; i < bit.startbit + bit.length; i++) {
+						if (value & (1<<i))
+	    					bitValue = bitValue + (value & (1<<i))
+					}
+					bitValue >>= bit.startbit
+					result << ["${bit.value}": bitValue]
+				}
+			}
+			return result
+		case "Range":
+			return value
+		case "Enum":
+			return param?.option[value.toString()] ?: value
+		case "Reference":
+			def refField = param.option[0]
+			if (refField)
+				return modelInfo."${refField}"."${value}"?._comment ?: value
+			return value
+		default:
+			return value
+	}
+}
+
+def getValueDefinition(name, values) {
+	for (item in values.keySet()) {
+		if (item == name)
+			return values[item]
+	}
+	return null
+}
+
 // V1 device methods
 def registerRTIMonitoring(dev) {
 	if (getDeviceThinQVersion(dev) == "thinq1") {
@@ -734,53 +782,6 @@ def decodeBinaryRTIMessage(protocol, modelInfo, data) {
 	return output
 }
 
-def getParsedValue(value, param, modelInfo) {
-	if (param == null)
-		return value
-
-	switch (param.type) {
-		case "Bit":
-			def result = []
-			for (bit in param.option) {
-				// Just a bit flag
-				if (bit.length == 1) {
-					if (value & (1<<bit.startbit))
-						result << bit.value
-				}
-				// Sub byte value
-				else {
-					def bitValue = 0
-					for (def i = bit.startbit; i < bit.startbit + bit.length; i++) {
-						if (value & (1<<i))
-	    					bitValue = bitValue + (value & (1<<i))
-					}
-					bitValue >>= bit.startbit
-					result << ["${bit.value}": bitValue]
-				}
-			}
-			return result
-		case "Range":
-			return value
-		case "Enum":
-			return param?.option[value.toString()] ?: value
-		case "Reference":
-			def refField = param.option[0]
-			if (refField)
-				return modelInfo."${refField}"."${value}"?._comment ?: value
-			return value
-		default:
-			return value
-	}
-}
-
-def getValueDefinition(name, values) {
-	for (item in values.keySet()) {
-		if (item == name)
-			return values[item]
-	}
-	return null
-}
-
 def refreshV1Devices() {
 	def workList = []
 	for (dev in getChildDevices()) {
@@ -825,6 +826,34 @@ def processMqttMessage(dev, payload) {
 
 def processDeviceMonitoring(dev, payload) {
 	log.debug "Monitoring event: ${dev?.deviceNetworkId} ${payload}"
+
+	if (dev != null) {
+		def deviceId = dev.deviceNetworkId.replace("thinq:", "")
+		modelInfo = state.foundDevices.find { it.id == deviceId }?.modelJson
+	/*	def stateData = decodeMQTTMessage(modelInfo.Monitoring.protocol, modelInfo, payload.data.state.reported)
+		if (stateData != null)
+			dev.processStateData(stateData)*/
+	}
+}
+
+def decodeMQTTMessage(protocol, modelInfo, data) {
+	def output = [:]
+	def values = modelInfo.Value
+	for (parameter in protocol) {
+		def mqttName = parameter.superSet
+		def name = parameter.value
+		
+		def value = data[mqttName]
+
+		output."$name" = null		
+
+		if (value != null) {
+			def paramDefinition = getValueDefinition(name, values)
+			def parsedValue = getParsedValue(value, paramDefinition, modelInfo)
+			output."$name" = parsedValue
+		}
+	}
+	return output
 }
 
 def cleanupChildDevices()
