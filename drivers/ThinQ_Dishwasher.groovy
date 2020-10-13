@@ -17,6 +17,7 @@ metadata {
         attribute "currentState", "string"
         attribute "error", "string"
         attribute "course", "string"
+        attribute "smartCourse", "string"
     }
 }
 
@@ -110,4 +111,5 @@ def processStateData(data) {
     if (course == "Haeavy")
         course = "heavy"
     sendEvent(name: "course", value: course != 0 ? course?.toLowerCase() : "none")
+    sendEvent(name: "smartCourse", value: data["SmartCourse"] != 0 ? data["SmartCourse"]?.toLowerCase() : "none")
 }

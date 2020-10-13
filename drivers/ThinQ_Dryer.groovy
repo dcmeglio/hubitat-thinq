@@ -17,6 +17,7 @@ metadata {
         attribute "currentState", "string"
         attribute "error", "string"
         attribute "course", "string"
+        attribute "smartCourse", "string"
         attribute "dryLevel", "string"
         attribute "temperatureLevel", "string"
         attribute "timeDry", "string"
@@ -108,6 +109,7 @@ def processStateData(data) {
     sendEvent(name: "currentState", value: currentState.replaceAll(/^@WM_STATE_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase())
     sendEvent(name: "error", value: data["Error"]?.toLowerCase())
     sendEvent(name: "course", value: data["Course"] != 0 ? data["Course"]?.toLowerCase() : "none")
+    sendEvent(name: "smartCourse", value: data["SmartCourse"] != 0 ? data["SmartCourse"]?.toLowerCase() : "none")
     sendEvent(name: "dryLevel", value: dryLevel.replaceAll(/^@WM_DRY27_DRY_LEVEL_/,"").replaceAll(/_W$/,"").replaceAll(/_/, " ").toLowerCase())
     sendEvent(name: "temperatureLevel", value: temperatureLevel.replaceAll(/^@WM_DRY27_BUTTON_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase())
     sendEvent(name: "timeDry", value: data["TimeDry"])

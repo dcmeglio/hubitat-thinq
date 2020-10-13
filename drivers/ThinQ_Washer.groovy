@@ -17,6 +17,7 @@ metadata {
         attribute "currentState", "string"
         attribute "error", "string"
         attribute "course", "string"
+        attribute "smartCourse", "string"
         attribute "soilLevel", "string"
         attribute "spinSpeed", "string"
         attribute "temperatureLevel", "string"
@@ -109,6 +110,7 @@ def processStateData(data) {
     sendEvent(name: "currentState", value: currentState.replaceAll(/^@WM_STATE_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase())
     sendEvent(name: "error", value: data["Error"].toLowerCase())
     sendEvent(name: "course", value: data["APCourse"] != 0 ? data["APCourse"]?.toLowerCase() : "none")
+    sendEvent(name: "smartCourse", value: data["SmartCourse"] != 0 ? data["SmartCourse"]?.toLowerCase() : "none")
     sendEvent(name: "soilLevel", value: soilLevel.replaceAll(/^@WM_MX_OPTION_SOIL_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase())
     sendEvent(name: "spinSpeed", value: spinSpeed.replaceAll(/^@WM_MX_OPTION_SPIN_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase())
     sendEvent(name: "temperatureLevel", value: waterTemp.replaceAll(/^@WM_MX_OPTION_TEMP_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase())
