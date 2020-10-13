@@ -736,8 +736,21 @@ def getParsedValue(value, param, modelInfo) {
 		case "Bit":
 			def result = []
 			for (bit in param.option) {
-				if (value & (1<<bit.startbit))
-					result << bit.value
+				// Just a bit flag
+				if (bit.length == 1) {
+					if (value & (1<<bit.startbit))
+						result << bit.value
+				}
+				// Sub byte value
+				else {
+					def bitValue = 0
+					for (def i = bit.startbit; i < bit.startbit + bit.length; i++) {
+						if (value & (1<<i))
+	    					bitValue = bitValue + (value & (1<<i)
+					}
+					bitValue >>= start
+					result << ["${bit.value}": bitValue]
+				}
 			}
 			return result
 		case "Range":
