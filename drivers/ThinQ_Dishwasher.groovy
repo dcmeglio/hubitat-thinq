@@ -14,6 +14,8 @@ metadata {
         attribute "runTimeDisplay", "string"
         attribute "remainingTime", "number"
         attribute "remainingTimeDisplay", "string"
+        attribute "delayTime", "number"
+        attribute "delayTimeDisplay", "string"
         attribute "currentState", "string"
         attribute "error", "string"
         attribute "course", "string"
@@ -88,6 +90,7 @@ def mqttClientStatus(String message) {
 def processStateData(data) {
     def runTime = 0
     def remainingTime = 0
+    def delayTime = 0
     def currentState = data["Process"] ?: ""
     def course = data["Course"]
     def error 
@@ -98,6 +101,9 @@ def processStateData(data) {
     runTime += (data["Initial_Time_H"]*60*60)
     runTime += (data["Initial_Time_M"]*60)
 
+    delayTime += (data["Reserve_Time_H"]*60*60)
+    delayTime += (data["Reserve_Time_M"]*60)
+
     if (currentState == "-")
         currentState = "power off"
 
@@ -105,6 +111,8 @@ def processStateData(data) {
     sendEvent(name: "runTimeDisplay", value: "${data["Remain_Time_H"]}:${data["Remain_Time_M"]}")
     sendEvent(name: "remainingTime", value: remainingTime)
     sendEvent(name: "remainingTimeDisplay", value: "${data["Initial_Time_H"]}:${data["Initial_Time_M"]}")
+    sendEvent(name: "delayTime", value: delayTime)
+    sendEvent(name: "delayTimeDisplay", value: "${data["Reserve_Time_H"]}:${data["Reserve_Time_M"]}")
     sendEvent(name: "currentState", value: currentState.replaceAll(/^@WM_STATE_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase())
     sendEvent(name: "error", value: data["Error"]?.toLowerCase())
     // There is a typo in the API, fix it
