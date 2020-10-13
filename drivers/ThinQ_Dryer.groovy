@@ -111,6 +111,6 @@ def processStateData(data) {
     sendEvent(name: "course", value: data["Course"] != 0 ? data["Course"]?.toLowerCase() : "none")
     sendEvent(name: "smartCourse", value: data["SmartCourse"] != 0 ? data["SmartCourse"]?.toLowerCase() : "none")
     sendEvent(name: "dryLevel", value: dryLevel.replaceAll(/^@WM_DRY27_DRY_LEVEL_/,"").replaceAll(/_W$/,"").replaceAll(/_/, " ").toLowerCase())
-    sendEvent(name: "temperatureLevel", value: temperatureLevel.replaceAll(/^@WM_DRY27_BUTTON_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase())
+    sendEvent(name: "temperatureLevel", value: temperatureLevel.replaceAll(/^@WM_DRY27_TEMP_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase())
     sendEvent(name: "timeDry", value: data["TimeDry"])
 }

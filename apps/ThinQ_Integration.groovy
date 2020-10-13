@@ -718,7 +718,6 @@ def getRTIData(workList) {
 		"workList": workList
 	])
 
-	log.debug "RTI Data: ${resultData}"
 	// No data available (yet)
 	if (resultData.returnCd == null)
 		return result
@@ -739,7 +738,6 @@ def getRTIData(workList) {
 
 					if (modelInfo) {
 						if (modelInfo?.Monitoring?.type == "BINARY(BYTE)") {
-							log.debug "Parsed RTI Data: " + decodeBinaryRTIMessage(modelInfo.Monitoring.protocol, modelInfo, data)
 							result[deviceId] = decodeBinaryRTIMessage(modelInfo.Monitoring.protocol, modelInfo, data)
 						}
 						else if (modelInfo?.Monitoring?.type == "THINQ2") {
