@@ -719,7 +719,7 @@ def getRTIData(workList) {
 	])
 
 	// No data available (yet)
-	if (resultData.returnCd == null)
+	if (resultData?.returnCd == null)
 		return result
 	else if (resultData.returnCd != "0000") {
 		log.error "Error during RTI Data: " + responseCodeText[resultData.returnCd]
