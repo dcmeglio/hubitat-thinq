@@ -688,9 +688,9 @@ def getParsedValue(value, param, modelInfo) {
   if (param == null)
     return value
 
-  switch (param.type) {
-    case "Serveral": // Typo in the API
-    case "Bit":
+  switch (param.type?.toLowerCase()) {
+    case "serveral": // Typo in the API
+    case "bit":
       def result = []
       for (bit in param.option) {
         // Just a bit flag
@@ -710,11 +710,11 @@ def getParsedValue(value, param, modelInfo) {
         }
       }
       return result
-    case "Range":
+    case "range":
       return value
-    case "Enum":
+    case "enum":
       return param?.option[value.toString()] ?: value
-    case "Reference":
+    case "reference":
       def refField = param.option[0]
       if (refField)
         return modelInfo."${refField}"."${value}"?._comment ?: value
@@ -876,6 +876,22 @@ def retrieveMqttDetails() {
   return [server: state.mqttServer, subscriptions: state.subscriptions, certificate: state.cert, privateKey: privateKey, caCertificate: caCert, clientId: state.client_id]
 }
 
+def getParsedMqttValue(value, param, modelInfo) {
+  logger("debug", "getParsedMqttValue(${value}, ${param}, ${modelInfo})")
+
+  if (param == null)
+    return value
+
+  switch (param.dataType?.toLowerCase()) {
+	case "enum":
+		return param.valueMapping?."$value"?.label ?: value
+	case "range":
+		return value
+    default:
+      return value
+  }
+}
+
 def processMqttMessage(dev, payload) {
   logger("debug", "processMqttMessage(${dev}, ${payload})")
 
@@ -927,7 +943,7 @@ def decodeMQTTMessage(modelInfo, data) {
 			output."${parameter.capitalize()}" = null
 
 			if (data[parameter] != null) {
-				
+				def parsedValie = getParsedMqttValue(data[parameter], modelInfo.MonitoringValue[parameter], modelInfo)
 			}
 		}
 	}
