@@ -60,7 +60,7 @@ def mqttConnectUntilSuccessful() {
 	}
 	catch (e)
 	{
-		log.warn "Lost connection to MQTT, retrying in 15 seconds"
+		log.warn "Lost connection to MQTT, retrying in 15 seconds ${e}"
 		runIn(15, "mqttConnectUntilSuccessful")
 		return false
 	}

@@ -894,32 +894,44 @@ def processDeviceMonitoring(dev, payload) {
   if (dev != null) {
     def deviceId = dev.deviceNetworkId.replace("thinq:", "")
     modelInfo = state.foundDevices.find { it.id == deviceId }?.modelJson
-  /*	def stateData = decodeMQTTMessage(modelInfo.Monitoring.protocol, modelInfo, payload.data.state.reported)
+  /*	def stateData = decodeMQTTMessage(modelInfo, payload.data.state.reported)
     if (stateData != null)
       dev.processStateData(stateData)*/
   }
 }
 
-def decodeMQTTMessage(protocol, modelInfo, data) {
-  logger("debug", "decodeMQTTMessage(${protocol}, ${modelInfo}, ${data})")
+def decodeMQTTMessage(modelInfo, data) {
+	def output = [:]
+	// Thinqv1 style over MQTT
+	if (modelInfo.Monitoring != null) {
+		def protocol = modelInfo.Monitoring.protocol
+		def values = modelInfo.Value
+		for (parameter in protocol) {
+			def mqttName = parameter.superSet
+			def name = parameter.value
+			
+			def value = data[mqttName]
 
-  def output = [:]
-  def values = modelInfo.Value
-  for (parameter in protocol) {
-    def mqttName = parameter.superSet
-    def name = parameter.value
+			output."$name" = null		
 
-    def value = data[mqttName]
+			if (value != null) {
+				def paramDefinition = getValueDefinition(name, values)
+				def parsedValue = getParsedValue(value, paramDefinition, modelInfo)
+				output."$name" = parsedValue
+			}
+		}
+	}
+	// Thinqv2 style
+	else if (modelInfo.MonitoringValue != null) {
+		for (parameter in modelInfo.MonitoringValue.keySet()) {
+			output."${parameter.capitalize()}" = null
 
-    output."$name" = null
-
-    if (value != null) {
-      def paramDefinition = getValueDefinition(name, values)
-      def parsedValue = getParsedValue(value, paramDefinition, modelInfo)
-      output."$name" = parsedValue
-    }
-  }
-  return output
+			if (data[parameter] != null) {
+				
+			}
+		}
+	}
+	return output
 }
 
 def cleanupChildDevices() {
