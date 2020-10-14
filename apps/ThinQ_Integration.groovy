@@ -116,6 +116,28 @@ preferences {
   "9006": "NO_USER_INFORMATION"
 ]
 
+@Field static def thinq2To1Mapping = [
+	"state": "State",
+	"initialTimeHour": "Initial_Time_H",
+	"initialTimeMinute": "Initial_Time_M",
+	"remainTimeHour": "Remain_Time_H",
+	"remainTimeMinute": "Remain_Time_M",
+	"reserveTimeHour": "Reserve_Time_H",
+	"reserveTimeMinute": "Reserve_Time_M",
+	"soilWash": "Soil",
+	"spin": "SpinSpeed",
+	"temp": "TempControl",
+	"dryLevel": "DryLevel",
+	"error": "Error",
+	"timeDry": "TimeDry",
+	"opCourseFLUpper25inchBaseUS": "OPCourse",
+	"apCourseFLUpper25inchBaseUS": "APCourse",
+	"downloadedCourseFLUpper25inchBaseUS": "SmartCourse",
+	"smartCourseDryer27inchBase": "SmartCourse",
+	"downloadedCourseDryer27inchBase": "SmartCourse",
+	"courseDryer27inchBase": "Course"
+]
+
 def prefMain() {
   if (state.client_id == null)
     state.client_id = (UUID.randomUUID().toString()+UUID.randomUUID().toString()).replaceAll(/-/,"")
@@ -882,11 +904,15 @@ def getParsedMqttValue(value, param, modelInfo) {
   if (param == null)
     return value
 
-  switch (param.dataType?.toLowerCase()) {
+  switch (param.dataType?.toLowerCase() ?: (param.ref != null ? "ref" : null)) {
 	case "enum":
 		return param.valueMapping?."$value"?.label ?: value
 	case "range":
 		return value
+	case "ref":
+	  def refField = param.ref
+      if (refField)
+		return modelInfo."${refField}"."${value}"?._comment ?: value
     default:
       return value
   }
@@ -940,10 +966,11 @@ def decodeMQTTMessage(modelInfo, data) {
 	// Thinqv2 style
 	else if (modelInfo.MonitoringValue != null) {
 		for (parameter in modelInfo.MonitoringValue.keySet()) {
-			output."${parameter.capitalize()}" = null
+			output."${thinq2To1Mapping[parameter] ?: parameter}" = null
 
 			if (data[parameter] != null) {
-				def parsedValie = getParsedMqttValue(data[parameter], modelInfo.MonitoringValue[parameter], modelInfo)
+				def parsedValue = getParsedMqttValue(data[parameter], modelInfo.MonitoringValue[parameter], modelInfo)
+				output."${thinq2To1Mapping[parameter] ?: parameter}" = parsedValue
 			}
 		}
 	}
