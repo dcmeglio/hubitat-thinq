@@ -807,6 +807,7 @@ def getRTIData(workList) {
   }
   else {
     for (workItem in resultData.workList) {
+		logger("debug", "getRTIData(${workList}) - RTI Data: ${workItem}")
       def deviceId = workItem.deviceId
       def returnCode = workItem.returnCode
       def format = workItem.format
