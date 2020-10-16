@@ -9,6 +9,14 @@ metadata {
     definition(name: "LG ThinQ Oven", namespace: "dcm.thinq", author: "dmeglio@gmail.com") {
         capability "Sensor"
         capability "Initialize"
+
+        attribute "frontRightState", "string"
+        attribute "frontLeftState", "string"
+        attribute "rearRightState", "string"
+        attribute "rearLeftState", "string"
+        attribute "centerState", "string"
+        attribute "ovenState", "string"
+        attribute "lowerOvenState", "string"
     }
 }
 
@@ -77,5 +85,15 @@ def mqttClientStatus(String message) {
 }
 
 def processStateData(data) {
-    
+    def isFahrenheit = data["MonTempUnit"] == 0
+
+    sendEvent(name: "frontRightState", value: data["RFState"].replaceAll(/^OV_STATE_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase())
+    sendEvent(name: "frontLeftState", value: data["LFState"].replaceAll(/^@OV_STATE_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase())
+    sendEvent(name: "rearRightState", value: data["RRState"].replaceAll(/^@OV_STATE_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase())
+    sendEvent(name: "rearLeftState", value: data["LRState"].replaceAll(/^@OV_STATE_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase())
+    sendEvent(name: "centerState", value: data["CenterState"].replaceAll(/^@OV_STATE_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase())
+    sendEvent(name: "ovenState", value: data["UpperOvenState"].replaceAll(/^@OV_STATE_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase())
+    if (data["LowerOvenState"] != "NOT_DEFINE_VALUE") {
+        sendEvent(name: "lowerOvenState", value: data["LowerOvenState"].replaceAll(/^@OV_STATE_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase())
+    }
 }

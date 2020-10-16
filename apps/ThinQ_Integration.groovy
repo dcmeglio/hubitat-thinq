@@ -13,6 +13,7 @@
 
 import groovy.transform.Field
 import java.text.SimpleDateFormat
+import groovy.json.JsonSlurper
 
 @Field List<String> LOG_LEVELS = ["error", "warn", "info", "debug", "trace"]
 @Field String DEFAULT_LOG_LEVEL = LOG_LEVELS[2]
@@ -139,7 +140,7 @@ preferences {
 ]
 
 def prefMain() {
-  if (state.client_id == null)
+if (state.client_id == null)
     state.client_id = (UUID.randomUUID().toString()+UUID.randomUUID().toString()).replaceAll(/-/,"")
     state.auth_retry_cnt = 0
   def countries = getCountries()
@@ -352,7 +353,19 @@ def getModelJson(url) {
       ]
     ) {
       resp ->
-      result = resp?.data
+	  try
+	  {
+		  // This sometimes comes back as a byte array. Don't know why, handle it.
+		  if (resp?.data?.available() != null) {
+			byte[] array = new byte[resp.data.available()];
+			resp.data.read(array);
+			def str = new String(array)
+			result = new JsonSlurper().parseText(str)
+		}
+	  }
+	  catch (e) {
+		  result = resp?.data
+	  }
     }
     logger("trace", "getModelJson(${url}) - ${result}")
   }
@@ -666,7 +679,7 @@ def lgEdmPost(url, body, refresh = true) {
       }
     }
   }
-
+  logger("debug", "lgEdmPost(${url}, ${body}, ${refresh}) - ${result}")
   return result
 }
 
@@ -937,14 +950,33 @@ def processDeviceMonitoring(dev, payload) {
   if (dev != null) {
     def deviceId = dev.deviceNetworkId.replace("thinq:", "")
     modelInfo = state.foundDevices.find { it.id == deviceId }?.modelJson
-  /*	def stateData = decodeMQTTMessage(modelInfo, payload.data.state.reported)
+  	def stateData = decodeMQTTMessage(modelInfo, payload?.data?.state?.reported)
     if (stateData != null)
-      dev.processStateData(stateData)*/
+      dev.processStateData(stateData)
   }
+}
+
+def decodeMQTTValue(data, name) {
+	def namePart = name.split(/\./)
+	
+	if (namePart.size() == 1) {
+		try {
+			return data[namePart[0]]
+		}
+		catch (e) {
+			// Silent
+		}
+	}
+	if (namePart.size() > 1)
+		return decodeMQTTValue(data[namePart[0]],namePart[1..-1].join('.'))
 }
 
 def decodeMQTTMessage(modelInfo, data) {
 	def output = [:]
+
+	if (data == null)
+		return output
+
 	// Thinqv1 style over MQTT
 	if (modelInfo.Monitoring != null) {
 		def protocol = modelInfo.Monitoring.protocol
@@ -953,7 +985,7 @@ def decodeMQTTMessage(modelInfo, data) {
 			def mqttName = parameter.superSet
 			def name = parameter.value
 			
-			def value = data[mqttName]
+			def value = decodeMQTTValue(data,mqttName)
 
 			output."$name" = null		
 
