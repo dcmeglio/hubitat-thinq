@@ -91,7 +91,7 @@ def processStateData(data) {
     def runTime = 0
     def remainingTime = 0
     def delayTime = 0
-    def currentState =  ?: ""
+    def currentState = data["State"] ?: ""
     def course = data["Course"]
     def error 
 
