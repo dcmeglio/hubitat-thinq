@@ -91,7 +91,7 @@ def processStateData(data) {
     def runTime = 0
     def remainingTime = 0
     def delayTime = 0
-    def currentState = data["Process"] ?: ""
+    def currentState =  ?: ""
     def course = data["Course"]
     def error 
 
@@ -113,7 +113,7 @@ def processStateData(data) {
     sendEvent(name: "remainingTimeDisplay", value: "${data["Initial_Time_H"]}:${data["Initial_Time_M"]}")
     sendEvent(name: "delayTime", value: delayTime)
     sendEvent(name: "delayTimeDisplay", value: "${data["Reserve_Time_H"]}:${data["Reserve_Time_M"]}")
-    sendEvent(name: "currentState", value: currentState.replaceAll(/^@WM_STATE_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase())
+    sendEvent(name: "currentState", value: parent.cleanEnumValue(currentState, "@DW_STATE_"))
     sendEvent(name: "error", value: data["Error"]?.toLowerCase())
     // There is a typo in the API, fix it
     if (course == "Haeavy")

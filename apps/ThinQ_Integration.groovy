@@ -768,6 +768,13 @@ def getValueDefinition(name, values) {
 	return null
 }
 
+def cleanEnumValue(value, prefix) {
+	if (value == null)
+		return ""
+
+	return value.replaceAll("^"+prefix,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase()
+}
+
 // V1 device methods
 def registerRTIMonitoring(dev) {
 	logger("debug", "registerRTIMonitoring(${dev})")
