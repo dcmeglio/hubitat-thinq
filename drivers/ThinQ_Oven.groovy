@@ -87,6 +87,11 @@ def mqttClientStatus(String message) {
 def processStateData(data) {
     def isFahrenheit = data["MonTempUnit"] == 0
 
+    def rightFrontState = data["RFState"]
+    def frontLeftState = data["LFState"]
+    def rearLeftState = data["LRState"]
+    def rearRightState = data["RRState"]
+    def centerState = data["CenterState"]
     def frontRight = parent.cleanEnumValue(frontRightState, "@OV_STATE_")
     if (frontRight == "initial")
         frontRight = "power off"
@@ -108,8 +113,8 @@ def processStateData(data) {
     sendEvent(name: "rearRightState", value: rearRight)
     sendEvent(name: "centerState", value: center)
    
-    sendEvent(name: "ovenState", value: data["UpperOvenState"]?.replaceAll(/^@OV_STATE_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase()) ?: "power off"
+    sendEvent(name: "ovenState", value: parent.cleanEnumValue(data["UpperOvenState"], "@OV_STATE_") ?: "power off")
     if (data["LowerOvenState"] != "NOT_DEFINE_VALUE") {
-        sendEvent(name: "lowerOvenState", value: data["LowerOvenState"]?.replaceAll(/^@OV_STATE_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase() ?: "power off")
+        sendEvent(name: "lowerOvenState", value: parent.cleanEnumValue(data["LowerOvenState"], "@OV_STATE_") ?: "power off")
     }
 }
