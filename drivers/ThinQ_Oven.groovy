@@ -114,7 +114,8 @@ def processStateData(data) {
     sendEvent(name: "centerState", value: center)
    
     sendEvent(name: "ovenState", value: parent.cleanEnumValue(data["UpperOvenState"], "@OV_STATE_") ?: "power off")
-    if (data["LowerOvenState"] != "NOT_DEFINE_VALUE") {
+    // The API has a typo in it that causes this weird value
+    if (data["LowerOvenState"] != "NOT_DEFINE_VALUE" && data["LowerOvenState"] != "NOT_DEFINE_VALUE, value:7") {
         sendEvent(name: "lowerOvenState", value: parent.cleanEnumValue(data["LowerOvenState"], "@OV_STATE_") ?: "power off")
     }
 }
