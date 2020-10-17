@@ -776,6 +776,33 @@ def cleanEnumValue(value, prefix) {
 }
 
 // V1 device methods
+def sendCommand(dev, command, option, key, value) {
+	logger("debug", "sendCommand(${dev}, ${key}, ${value})")
+
+	def thinqDeviceId = dev?.deviceNetworkId?.replace("thinq:", "")
+	if (getDeviceThinQVersion(dev) == "thinq1") {
+		def resultData = lgEdmPost("${state.thinq1Url}/rti/rtiControl", [
+			"cmd": command,
+			"cmdOpt": option,
+			"value": ["${key}": value],
+			"deviceId": thinqDeviceId,
+			"workId": UUID.randomUUID().toString(),
+			"data": ""
+		])
+		return resultData
+	}
+	else {
+		return lgAPIPost("${state.thinqUrl}/service/devices/${thinqDeviceId}/control-sync",
+		[
+			command: command,
+			ctrlKey: option,
+			dataKey: key,
+			dataValue: value
+		])
+	}
+	return null
+}
+
 def registerRTIMonitoring(dev) {
 	logger("debug", "registerRTIMonitoring(${dev})")
 
@@ -794,6 +821,7 @@ def registerRTIMonitoring(dev) {
 		else
 			return null
 	}
+	return null
 }
 
 def stopRTIMonitoring(dev) {
