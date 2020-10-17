@@ -140,9 +140,9 @@ preferences {
 ]
 
 def prefMain() {
-if (state.client_id == null)
+	if (state.client_id == null)
 		state.client_id = (UUID.randomUUID().toString()+UUID.randomUUID().toString()).replaceAll(/-/,"")
-		state.auth_retry_cnt = 0
+	state.auth_retry_cnt = 0
 	def countries = getCountries()
 
 	if (countries == null)
@@ -520,12 +520,12 @@ def getMqttServer() {
 
 def register() {
 	logger("debug", "register()")
-	return lgAPIPost("https://route.lgthinq.com:46030/v1/service/users/client", null)
+	return lgAPIPost("${state.thinqUrl}/service/users/client", null)
 }
 
 def getCertAndSub() {
 	logger("debug", "getCertAndSub()")
-	return lgAPIPost("https://route.lgthinq.com:46030/v1/service/users/client/certificate", [csr: csr])
+	return lgAPIPost("${state.thinqUrl}/service/users/client/certificate", [csr: csr])
 }
 
 def getOAuthDetailsFromUrl() {
