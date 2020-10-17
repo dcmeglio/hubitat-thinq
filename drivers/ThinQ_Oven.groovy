@@ -87,13 +87,13 @@ def mqttClientStatus(String message) {
 def processStateData(data) {
     def isFahrenheit = data["MonTempUnit"] == 0
 
-    sendEvent(name: "frontRightState", value: data["RFState"].replaceAll(/^OV_STATE_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase())
-    sendEvent(name: "frontLeftState", value: data["LFState"].replaceAll(/^@OV_STATE_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase())
-    sendEvent(name: "rearRightState", value: data["RRState"].replaceAll(/^@OV_STATE_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase())
-    sendEvent(name: "rearLeftState", value: data["LRState"].replaceAll(/^@OV_STATE_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase())
-    sendEvent(name: "centerState", value: data["CenterState"].replaceAll(/^@OV_STATE_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase())
-    sendEvent(name: "ovenState", value: data["UpperOvenState"].replaceAll(/^@OV_STATE_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase())
+    sendEvent(name: "frontRightState", value: data["RFState"]?.replaceAll(/^OV_STATE_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase() ?: "power off")
+    sendEvent(name: "frontLeftState", value: data["LFState"]?.replaceAll(/^@OV_STATE_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase() ?: "power off")
+    sendEvent(name: "rearRightState", value: data["RRState"]?.replaceAll(/^@OV_STATE_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase() ?: "power off")
+    sendEvent(name: "rearLeftState", value: data["LRState"]?.replaceAll(/^@OV_STATE_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase() ?: "power off")
+    sendEvent(name: "centerState", value: data["CenterState"]?.replaceAll(/^@OV_STATE_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase() ?: "power off")
+    sendEvent(name: "ovenState", value: data["UpperOvenState"]?.replaceAll(/^@OV_STATE_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase()) ?: "power off"
     if (data["LowerOvenState"] != "NOT_DEFINE_VALUE") {
-        sendEvent(name: "lowerOvenState", value: data["LowerOvenState"].replaceAll(/^@OV_STATE_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase())
+        sendEvent(name: "lowerOvenState", value: data["LowerOvenState"]?.replaceAll(/^@OV_STATE_/,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase() ?: "power off")
     }
 }

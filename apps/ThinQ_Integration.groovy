@@ -819,8 +819,11 @@ def getRTIData(workList) {
     logger("error", "getRTIData(${workList}) - RTI Data: ${responseCodeText[resultData.returnCd]}")
   }
   else {
-    for (workItem in resultData.workList) {
-		logger("debug", "getRTIData(${workList}) - RTI Data: ${workItem}")
+    def resultWorkList = resultData.workList
+    if (workList.size() == 1)
+      resultWorkList = [resultData.workList]
+    for (workItem in resultWorkList) {
+	  	logger("debug", "getRTIData(${workList}) - RTI Data: ${workItem}")
       def deviceId = workItem.deviceId
       def returnCode = workItem.returnCode
       def format = workItem.format
