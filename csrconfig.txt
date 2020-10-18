@@ -1,0 +1,14 @@
+[ req ]
+default_md = sha256
+prompt = no
+req_extensions = req_ext
+distinguished_name = req_distinguished_name
+[ req_distinguished_name ]
+commonName = AWS IoT Certificate
+countryName = US
+stateOrProvinceName = State
+localityName = Locality
+organizationName = Amazon
+[ req_ext ]
+keyUsage=critical,digitalSignature,keyEncipherment
+extendedKeyUsage=critical,serverAuth,clientAuth
