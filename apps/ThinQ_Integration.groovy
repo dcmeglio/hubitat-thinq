@@ -36,6 +36,7 @@ preferences {
 	page(name: "prefDevices")
 }
 
+@Field static def certGeneratorUrl = "https://lgthinq.azurewebsites.net/api/certdata"
 @Field static def gatewayUrl = "https://route.lgthinq.com:46030/v1/service/application/gateway-uri"
 @Field static def caCertUrl = "https://www.websecurity.digicert.com/content/dam/websitesecurity/digitalassets/desktop/pdfs/roots/VeriSign-Class%203-Public-Primary-Certification-Authority-G5.pem"
 
@@ -195,14 +196,25 @@ def prefMain() {
 def prefCert() {
 	return dynamicPage(name: "prefCert", title: "LG ThinQ OAuth", nextPage: "prefDevices", uninstall:false, install: false) {
 		section {
-			paragraph "The LG ThinQ server uses certificate based authentication. You will need to create an RSA 2048bit private key and a CSR for the certificate. In PKCS#1 PEM format. If you know how to create certificates yourself, you can feel free. If not there is a web tool <a href=\"https://certificatetools.com/\" target=\"_blank\">https://certificatetools.com/</a> which you can use to generate the key and CSR. Once you have them paste them below."
-			input "privateKey", "textarea", title: "Private Key", required: true
-			input "csr", "textarea", title: "CSR", required: true
+			paragraph "The LG ThinQ server uses certificate based authentication. You will need to create an RSA 2048bit private key and a CSR for the certificate. You can either create the private key and CSR yourself, or you can use the automated generator. Note that this automated generator uses an Azure Function which means your private key was sent to you by a third party. That's not ideal from a security standpoint. Your private key is never stored, and transmitted securely via HTTPS. Additionally, your client ID (also needed to connect) is never sent to the cloud. If you're interested, the code for the Azure Function is public <a href='https://github.com/dcmeglio/lg-certificate' target='_blank'>here</a>."
+			input "certSource", "enum", options: ["Use Cloud Service", "I will generate my own"], submitOnChange: true
+			if (certSource == "I will generate my own") {\
+				paragraph "Here are the OpenSSL commands you can use to generate this information:"
+				paragraph "openssl genpkey -outform PEM -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out priv.key"
+				paragraph "openssl req -new -nodes -key priv.key -config csrconfig.txt -out cert.csr"
+				paragraph "The csrconfig.txt should match <a href='https://raw.githubusercontent.com/dcmeglio/hubitat-thinq/master/csrconfig.txt' target='_blank'>this file</a>"
+				input "privateKey", "textarea", title: "Private Key", required: true
+				input "csr", "textarea", title: "CSR", required: true
+			}
+			
 		}
 	}
 }
 
 def prefDevices() {
+	if (certSource == "Use Cloud Service") {
+		generateKeyAndCSR()
+	}
 	if (url != state.prevUrl) {
 		def oauthDetails = getOAuthDetailsFromUrl()
 		state.oauth_url = oauthDetails.url[0..-2]
@@ -525,7 +537,10 @@ def register() {
 
 def getCertAndSub() {
 	logger("debug", "getCertAndSub()")
-	return lgAPIPost("${state.thinqUrl}/service/users/client/certificate", [csr: csr])
+	def certReq = csr
+	if (certSource == "Use Cloud Service")
+		certReq = state.csr
+	return lgAPIPost("${state.thinqUrl}/service/users/client/certificate", [csr: certReq])
 }
 
 def getOAuthDetailsFromUrl() {
@@ -949,7 +964,10 @@ def retrieveMqttDetails() {
 			caCert = resp.data.text
 	}
 	logger("trace", "retrieveMqttDetails() - ${caCert}")
-	return [server: state.mqttServer, subscriptions: state.subscriptions, certificate: state.cert, privateKey: privateKey, caCertificate: caCert, clientId: state.client_id]
+	def privKey = privateKey
+	if (certSource == "Use Cloud Service")
+		privKey = state.privateKey
+	return [server: state.mqttServer, subscriptions: state.subscriptions, certificate: state.cert, privateKey: privKey, caCertificate: caCert, clientId: state.client_id]
 }
 
 def getParsedMqttValue(value, param, modelInfo) {
@@ -1068,6 +1086,17 @@ def cleanupChildDevices() {
 			continue
 
 		deleteChildDevice(d.deviceNetworkId)
+	}
+}
+
+def generateKeyAndCSR() {
+	logger("debug", "generateKeyAndCSR()")
+	httpGet([
+		uri: certGeneratorUrl
+	]) {
+		resp ->
+			state.privateKey = resp.data.privKey
+			state.csr = resp.data.csr
 	}
 }
 
