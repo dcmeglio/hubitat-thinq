@@ -113,11 +113,14 @@ def processStateData(data) {
     sendEvent(name: "remainingTimeDisplay", value: "${data["Initial_Time_H"]}:${data["Initial_Time_M"]}")
     sendEvent(name: "delayTime", value: delayTime)
     sendEvent(name: "delayTimeDisplay", value: "${data["Reserve_Time_H"]}:${data["Reserve_Time_M"]}")
-    sendEvent(name: "currentState", value: parent.cleanEnumValue(currentState, "@DW_STATE_"))
+    if (currentState != null)
+        sendEvent(name: "currentState", value: parent.cleanEnumValue(currentState, "@DW_STATE_"))
     sendEvent(name: "error", value: data["Error"]?.toLowerCase())
     // There is a typo in the API, fix it
     if (course == "Haeavy")
         course = "heavy"
-    sendEvent(name: "course", value: course != 0 ? course?.toLowerCase() : "none")
-    sendEvent(name: "smartCourse", value: data["SmartCourse"] != 0 ? data["SmartCourse"]?.toLowerCase() : "none")
+    if (course != null)
+        sendEvent(name: "course", value: course != 0 ? course?.toLowerCase() : "none")
+    if (data["SmartCourse"] != null)
+        sendEvent(name: "smartCourse", value: data["SmartCourse"] != 0 ? data["SmartCourse"]?.toLowerCase() : "none")
 }

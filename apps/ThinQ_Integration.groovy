@@ -1043,9 +1043,7 @@ def decodeMQTTMessage(modelInfo, data) {
 			def mqttName = parameter.superSet
 			def name = parameter.value
 			
-			def value = decodeMQTTValue(data,mqttName)
-
-			output."$name" = null		
+			def value = decodeMQTTValue(data,mqttName)	
 
 			if (value != null) {
 				def paramDefinition = getValueDefinition(name, values)
@@ -1057,8 +1055,6 @@ def decodeMQTTMessage(modelInfo, data) {
 	// Thinqv2 style
 	else if (modelInfo.MonitoringValue != null) {
 		for (parameter in modelInfo.MonitoringValue.keySet()) {
-			output."${thinq2To1Mapping[parameter] ?: parameter}" = null
-
 			if (data[parameter] != null) {
 				def parsedValue = getParsedMqttValue(data[parameter], modelInfo.MonitoringValue[parameter], modelInfo)
 				output."${thinq2To1Mapping[parameter] ?: parameter}" = parsedValue

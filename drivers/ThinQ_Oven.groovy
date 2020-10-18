@@ -108,15 +108,21 @@ def processStateData(data) {
     def center = parent.cleanEnumValue(centerState, "@OV_STATE_")
     if (center == "initial")
         center = "power off"
-    sendEvent(name: "frontRightState", value: frontRight)
-    sendEvent(name: "frontLeftState", value: frontLeft)
-    sendEvent(name: "rearLeftState", value: rearLeft)
-    sendEvent(name: "rearRightState", value: rearRight)
-    sendEvent(name: "centerState", value: center)
+    if (frontRight != null)
+        sendEvent(name: "frontRightState", value: frontRight)
+    if (frontLeft != null)
+        sendEvent(name: "frontLeftState", value: frontLeft)
+    if (rearLeft != null)
+        sendEvent(name: "rearLeftState", value: rearLeft)
+    if (rearRight != null)
+        sendEvent(name: "rearRightState", value: rearRight)
+    if (center != null)
+        sendEvent(name: "centerState", value: center)
    
-    sendEvent(name: "ovenState", value: parent.cleanEnumValue(data["UpperOvenState"], "@OV_STATE_") ?: "power off")
+    if (data["UpperOvenState"] != null)
+        sendEvent(name: "ovenState", value: parent.cleanEnumValue(data["UpperOvenState"], "@OV_STATE_") ?: "power off")
     // The API has a typo in it that causes this weird value
-    if (data["LowerOvenState"] != "NOT_DEFINE_VALUE" && data["LowerOvenState"] != "NOT_DEFINE_VALUE, value:7") {
+    if (data["LowerOvenState"] != "NOT_DEFINE_VALUE" && data["LowerOvenState"] != "NOT_DEFINE_VALUE, value:7" && data["LowerOvenState"] != null) {
         sendEvent(name: "lowerOvenState", value: parent.cleanEnumValue(data["LowerOvenState"], "@OV_STATE_") ?: "power off")
     }
 }
