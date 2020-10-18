@@ -92,7 +92,8 @@ def processStateData(data) {
     def rearLeftState = data["LRState"]
     def rearRightState = data["RRState"]
     def centerState = data["CenterState"]
-    def frontRight = parent.cleanEnumValue(frontRightState, "@OV_STATE_")
+
+    def frontRight = parent.cleanEnumValue(rightFrontState, "@OV_STATE_")
     if (frontRight == "initial")
         frontRight = "power off"
     def frontLeft = parent.cleanEnumValue(frontLeftState, "@OV_STATE_")

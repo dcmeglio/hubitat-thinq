@@ -769,6 +769,7 @@ def getValueDefinition(name, values) {
 }
 
 def cleanEnumValue(value, prefix) {
+	log.debug "cleanEnumValue(${value}, ${prefix})"
 	logger("debug", "cleanEnumValue(${value}, ${prefix})")
 	if (value == null)
 		return ""
