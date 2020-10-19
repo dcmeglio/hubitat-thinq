@@ -17,7 +17,7 @@ import groovy.json.JsonSlurper
 
 @Field List<String> LOG_LEVELS = ["error", "warn", "info", "debug", "trace"]
 @Field String DEFAULT_LOG_LEVEL = LOG_LEVELS[2]
-@Field int AUTH_RETRY_MAX = 3
+@Field int AUTH_RETRY_MAX = 2
 
 definition(
 	name: "ThinQ Integration",
@@ -206,7 +206,6 @@ def prefCert() {
 				input "privateKey", "textarea", title: "Private Key", required: true
 				input "csr", "textarea", title: "CSR", required: true
 			}
-			
 		}
 	}
 }
@@ -331,17 +330,17 @@ def initialize() {
 def getStandardHeaders() {
 	def headers = [
 				"Accept": "application/json",
-				"x-thinq-app-os": "IOS",
-				"x-thinq-app-ver": "3.5.0000",
-				"x-thinq-app-level": "PRD",
-				"x-country-code": "US",
-				"x-message-id": "wideq",
+				"x-client-id": state.client_id,
+				"x-country-code": state.countryCode,
+				"x-language-code": state.langCode,
+				"x-message-id": "VJMcbWuRSy2XMqMupH30kA",
 				"x-api-key": "VGhpblEyLjAgU0VSVklDRQ==",
-				"x-thinq-app-type": "NUTS",
 				"x-service-code": "SVC202",
 				"x-service-phase": "OP",
-				"x-client-id": state.client_id,
-				"x-language-code": "en-US",
+				"x-thinq-app-level": "PRD",
+				"x-thinq-app-os": "ANDROID",
+				"x-thinq-app-type": "NUTS",
+				"x-thinq-app-ver": "3.0.1700",
 				"Host": "aic-service.lgthinq.com:46030"
 			]
 	if (state.access_token != null)
@@ -615,20 +614,20 @@ def lgEdmPost(url, body, refresh = true) {
 
 	def result
 	def headers = [
-			"x-thinq-application-key": "wideq",
-			"x-thinq-security-key": "nuts_securitykey",
 			"Accept": "application/json",
-			"x-thinq-app-os": "IOS",
-			"x-thinq-app-ver": "3.5.0000",
-			"x-thinq-app-level": "PRD",
-			"x-country-code": "US",
-			"x-message-id": "wideq",
+			"x-client-id": state.client_id,
+			"x-country-code": state.countryCode,
+			"x-language-code": state.langCode,
+			"x-message-id": "VJMcbWuRSy2XMqMupH30kA",
 			"x-api-key": "VGhpblEyLjAgU0VSVklDRQ==",
-			"x-thinq-app-type": "NUTS",
 			"x-service-code": "SVC202",
 			"x-service-phase": "OP",
-			"x-client-id": state.client_id,
-			"x-language-code": "en-US",
+			"x-thinq-app-level": "PRD",
+			"x-thinq-app-os": "ANDROID",
+			"x-thinq-app-type": "NUTS",
+			"x-thinq-app-ver": "3.0.1700",
+			"x-thinq-application-key": "wideq",
+			"x-thinq-security-key": "nuts_securitykey",
 			"Host": "aic-service.lgthinq.com:46030"
 		]
 	if (state.access_token)
@@ -1016,7 +1015,7 @@ def processDeviceMonitoring(dev, payload) {
 
 def decodeMQTTValue(data, name) {
 	def namePart = name.split(/\./)
-	
+
 	if (namePart.size() == 1) {
 		try {
 			return data[namePart[0]]
@@ -1042,8 +1041,8 @@ def decodeMQTTMessage(modelInfo, data) {
 		for (parameter in protocol) {
 			def mqttName = parameter.superSet
 			def name = parameter.value
-			
-			def value = decodeMQTTValue(data,mqttName)	
+
+			def value = decodeMQTTValue(data,mqttName)
 
 			if (value != null) {
 				def paramDefinition = getValueDefinition(name, values)
