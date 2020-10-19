@@ -783,7 +783,7 @@ def getValueDefinition(name, values) {
 }
 
 def cleanEnumValue(value, prefix) {
-	logger("debug", "cleanEnumValue(${value}, ${prefix})")
+	logger("info", "cleanEnumValue(${value}, ${prefix})")
 	if (value == null)
 		return ""
 
@@ -1007,8 +1007,10 @@ def processDeviceMonitoring(dev, payload) {
 		def deviceId = dev.deviceNetworkId.replace("thinq:", "")
 		modelInfo = state.foundDevices.find { it.id == deviceId }?.modelJson
 		def stateData = decodeMQTTMessage(modelInfo, payload?.data?.state?.reported)
-		if (stateData != null)
+		if (stateData != null) {
+			logger("info", "processStateData(${stateData})")
 			dev.processStateData(stateData)
+		}
 	}
 }
 
