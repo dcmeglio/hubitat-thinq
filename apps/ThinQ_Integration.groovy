@@ -732,7 +732,7 @@ def getDeviceThinQVersion(dev) {
 
 // Common device state processing methods
 def getParsedValue(value, param, modelInfo) {
-	logger("debug", "getParsedValue(${value}, ${param}, ${modelInfo})")
+	logger("debug", "getParsedValue(${value}, ${param}, modelInfo[FILTERED])")
 
 	if (param == null)
 		return value
@@ -904,7 +904,7 @@ def getRTIData(workList) {
 }
 
 def decodeBinaryRTIMessage(protocol, modelInfo, data) {
-	logger("debug", "decodeBinaryRTIMessage(${protocol}, ${modelInfo}, ${data})")
+	logger("debug", "decodeBinaryRTIMessage(${protocol}, modelInfo[FILTERED], ${data})")
 
 	def output = [:]
 	def values = modelInfo.Value
@@ -969,7 +969,7 @@ def retrieveMqttDetails() {
 }
 
 def getParsedMqttValue(value, param, modelInfo) {
-	logger("debug", "getParsedMqttValue(${value}, ${param}, ${modelInfo})")
+	logger("debug", "getParsedMqttValue(${value}, ${param}, modelInfo[FILTERED])")
 
 	if (param == null)
 		return value
@@ -1007,6 +1007,12 @@ def processDeviceMonitoring(dev, payload) {
 		def deviceId = dev.deviceNetworkId.replace("thinq:", "")
 		modelInfo = state.foundDevices.find { it.id == deviceId }?.modelJson
 		def stateData = decodeMQTTMessage(modelInfo, payload?.data?.state?.reported)
+
+		// Check for washerDryer
+		if (!stateData && payload?.data?.state?.reported?.containsKey('washerDryer')) {
+			stateData = decodeMQTTMessage(modelInfo, payload?.data?.state?.reported?.washerDryer)
+		}
+
 		if (stateData != null)
 			dev.processStateData(stateData)
 	}

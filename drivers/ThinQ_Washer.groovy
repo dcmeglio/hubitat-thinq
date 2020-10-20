@@ -5,9 +5,16 @@
  *
  */
 
+import groovy.transform.Field
+import groovy.json.JsonSlurper
+
+@Field List<String> LOG_LEVELS = ["error", "warn", "info", "debug", "trace"]
+@Field String DEFAULT_LOG_LEVEL = LOG_LEVELS[2]
+
 metadata {
     definition(name: "LG ThinQ Washer", namespace: "dcm.thinq", author: "dmeglio@gmail.com") {
         capability "Sensor"
+        capability "Switch"
         capability "Initialize"
 
         attribute "runTime", "number"
@@ -22,15 +29,23 @@ metadata {
         attribute "spinSpeed", "string"
         attribute "temperatureLevel", "string"
     }
+
+  preferences {
+    section { // General
+      input name: "logLevel", title: "Log Level", type: "enum", options: LOG_LEVELS, defaultValue: DEFAULT_LOG_LEVEL, required: false
+      input name: "logDescText", title: "Log Description Text", type: "bool", defaultValue: false, required: false
+    }
+  }
 }
 
-import groovy.json.JsonSlurper
-
 def uninstalled() {
+    logger("debug", "uninstalled()")
     parent.stopRTIMonitoring(device)
 }
 
 def initialize() {
+    logger("debug", "initialize()")
+
     if (getDataValue("master") == "true") {
         if (interfaces.mqtt.isConnected())
             interfaces.mqtt.disconnect()
@@ -42,49 +57,53 @@ def initialize() {
 }
 
 def mqttConnectUntilSuccessful() {
+  logger("debug", "mqttConnectUntilSuccessful()")
+
 	try {
 		def mqtt = parent.retrieveMqttDetails()
-    
-        interfaces.mqtt.connect(mqtt.server, 
-            mqtt.clientId, 
-            null, 
-            null, 
-            tlsVersion: "1.2", 
-            privateKey: mqtt.privateKey, 
-            caCertificate: mqtt.caCertificate, 
-            clientCertificate: mqtt.certificate)
-        pauseExecution(3000)
-        for (sub in mqtt.subscriptions) {
-            interfaces.mqtt.subscribe(sub, 0)
-        }
+
+    interfaces.mqtt.connect(mqtt.server,
+                            mqtt.clientId,
+                            null,
+                            null,
+                            tlsVersion: "1.2",
+                            privateKey: mqtt.privateKey,
+                            caCertificate: mqtt.caCertificate,
+                            clientCertificate: mqtt.certificate)
+    pauseExecution(3000)
+    for (sub in mqtt.subscriptions) {
+        interfaces.mqtt.subscribe(sub, 0)
+    }
 		return true
 	}
 	catch (e)
 	{
-		log.warn "Lost connection to MQTT, retrying in 15 seconds ${e}"
+    logger("warn", "Lost connection to MQTT, retrying in 15 seconds ${e}")
 		runIn(15, "mqttConnectUntilSuccessful")
 		return false
 	}
 }
 
 def parse(message) {
+    logger("debug", "parse(${message})")
     def topic = interfaces.mqtt.parseMessage(message)
-    def payload = new JsonSlurper().parseText(topic.payload) 
+    def payload = new JsonSlurper().parseText(topic.payload)
 
     parent.processMqttMessage(this, payload)
 }
 
 def mqttClientStatus(String message) {
-    log.debug "Status: " + message
+    logger("debug", "mqttClientStatus(${message})")
 
     if (message.startsWith("Error:")) {
-        log.error "MQTT Error: ${message}"
+        logger("error", "MQTT Error: ${message}")
+
         try {
             interfaces.mqtt.disconnect() // Guarantee we're disconnected
         }
         catch (e) {
         }
-		mqttConnectUntilSuccessful()
+        mqttConnectUntilSuccessful()
     }
 }
 
@@ -92,16 +111,24 @@ def processStateData(data) {
     def runTime = 0
     def remainingTime = 0
     def currentState = data["State"]
-    def error 
+    def error
     def soilLevel = data["Soil"] ?: ""
     def spinSpeed = data["SpinSpeed"] ?: ""
     def waterTemp = data["WaterTemp"] ?: ""
 
-    remainingTime += (data["Remain_Time_H"]*60*60)
-    remainingTime += (data["Remain_Time_M"]*60)
+    if (data?.containsKey('Remain_Time_H') ) {
+      remainingTime += (data["Remain_Time_H"]*60*60)
+      remainingTime += (data["Remain_Time_M"]*60)
+    }
 
-    runTime += (data["Initial_Time_H"]*60*60)
-    runTime += (data["Initial_Time_M"]*60)
+    if (data?.containsKey('Initial_Time_H') ) {
+      runTime += (data["Initial_Time_H"]*60*60)
+      runTime += (data["Initial_Time_M"]*60)
+    }
+
+    if (data?.containsKey('type') && data.type == "monitoring") {
+        sendEvent(name: "switch", value: data.state.reported.online =~ /true/ ? 'on' : 'off')
+    }
 
     sendEvent(name: "runTime", value: runTime)
     sendEvent(name: "runTimeDisplay", value: "${data["Remain_Time_H"]}:${data["Remain_Time_M"]}")
@@ -109,7 +136,11 @@ def processStateData(data) {
     sendEvent(name: "remainingTimeDisplay", value: "${data["Initial_Time_H"]}:${data["Initial_Time_M"]}")
     if (currentState != null)
         sendEvent(name: "currentState", value: parent.cleanEnumValue(currentState, "@WM_STATE_"))
-    sendEvent(name: "error", value: data["Error"].toLowerCase())
+
+    if (data?.containsKey('Error') ) {
+      sendEvent(name: "error", value: data["Error"].toLowerCase())
+    }
+
     if (data["APCourse"] != null)
         sendEvent(name: "course", value: data["APCourse"] != 0 ? data["APCourse"]?.toLowerCase() : "none")
     if (data["SmartCourse"] != null)
@@ -120,4 +151,22 @@ def processStateData(data) {
         sendEvent(name: "spinSpeed", value: parent.cleanEnumValue(spinSpeed, "@WM_MX_OPTION_SPIN_"))
     if (temperatureLevel != null)
         sendEvent(name: "temperatureLevel", value: parent.cleanEnumValue(temperatureLevel, "@WM_MX_OPTION_TEMP_"))
+}
+
+
+/**
+* @param level Level to log at, see LOG_LEVELS for options
+* @param msg Message to log
+*/
+private logger(level, msg) {
+  if (level && msg) {
+    Integer levelIdx = LOG_LEVELS.indexOf(level)
+    Integer setLevelIdx = LOG_LEVELS.indexOf(logLevel)
+    if (setLevelIdx < 0) {
+      setLevelIdx = LOG_LEVELS.indexOf(DEFAULT_LOG_LEVEL)
+    }
+    if (levelIdx <= setLevelIdx) {
+      log."${level}" "${device.displayName} ${msg}"
+    }
+  }
 }
