@@ -1000,18 +1000,25 @@ def processMqttMessage(dev, payload) {
 	}
 }
 
+def findMQTTDataNode(modelInfo, data) {
+    def controlWifi = modelInfo.ControlWifi
+    def key = controlWifi.keySet()[0]
+	if (controlWifi[key].containsKey("data")) {
+	    def wifiData = controlWifi[key].data
+	    if (data.containsKey(wifiData.keySet()[0]))
+		    return data."${wifiData.keySet()[0]}"
+	}
+	return data
+}
+
 def processDeviceMonitoring(dev, payload) {
 	logger("debug", "processDeviceMonitoring(${dev}, ${payload})")
 
 	if (dev != null) {
 		def deviceId = dev.deviceNetworkId.replace("thinq:", "")
 		modelInfo = state.foundDevices.find { it.id == deviceId }?.modelJson
-		def stateData = decodeMQTTMessage(modelInfo, payload?.data?.state?.reported)
-
-		// Check for washerDryer
-		if (!stateData && payload?.data?.state?.reported?.containsKey('washerDryer')) {
-			stateData = decodeMQTTMessage(modelInfo, payload?.data?.state?.reported?.washerDryer)
-		}
+		def dataNode = findMQTTDataNode(modelInfo, payload?.data?.state?.reported)
+		def stateData = decodeMQTTMessage(modelInfo, dataNode)
 
 		if (stateData != null)
 			dev.processStateData(stateData)
