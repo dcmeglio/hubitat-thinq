@@ -1001,13 +1001,14 @@ def processMqttMessage(dev, payload) {
 }
 
 def findMQTTDataNode(modelInfo, data) {
-    def controlWifi = modelInfo.ControlWifi
-    def key = controlWifi.keySet()[0]
+	def controlWifi = modelInfo.ControlWifi
+	def key = controlWifi.keySet()[0]
 	if (controlWifi[key].containsKey("data")) {
-	    def wifiData = controlWifi[key].data
-	    if (data.containsKey(wifiData.keySet()[0]))
-		    return data."${wifiData.keySet()[0]}"
+		def wifiData = controlWifi[key].data
+		if (data.containsKey(wifiData.keySet()[0]))
+			return data."${wifiData.keySet()[0]}"
 	}
+	logger("debug", "findMQTTDataNode(${data})")
 	return data
 }
 
@@ -1072,6 +1073,8 @@ def decodeMQTTMessage(modelInfo, data) {
 			}
 		}
 	}
+
+	logger("debug", "decodeMQTTMessage(${output})")
 	return output
 }
 

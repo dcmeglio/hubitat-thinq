@@ -87,9 +87,9 @@ def mqttConnectUntilSuccessful() {
 }
 
 def parse(message) {
-    logger("debug", "parse(${message})")
     def topic = interfaces.mqtt.parseMessage(message)
     def payload = new JsonSlurper().parseText(topic.payload)
+    logger("trace", "parse(${payload})")
 
     parent.processMqttMessage(this, payload)
 }
@@ -110,6 +110,8 @@ def mqttClientStatus(String message) {
 }
 
 def processStateData(data) {
+    logger("debug", "processStateData(${data})")
+
     def runTime = 0
     def remainingTime = 0
     def delayTime = 0
@@ -151,28 +153,36 @@ def processStateData(data) {
     }
 
     sendEvent(name: "runTime", value: runTime)
-    sendEvent(name: "runTimeDisplay", value: data["Remain_Time_H"] ? "${data["Remain_Time_H"]}:${data["Remain_Time_M"]}" : "${data["Remain_Time_M"]}")
+    sendEvent(name: "runTimeDisplay", value: (data?.containsKey('Remain_Time_H') && data["Remain_Time_H"] != '') ? "${data["Remain_Time_H"]}:${data["Remain_Time_M"]}" : "${data["Remain_Time_M"]}")
     sendEvent(name: "remainingTime", value: remainingTime)
-    sendEvent(name: "remainingTimeDisplay", value: data["Initial_Time_H"] ? "${data["Initial_Time_H"]}:${data["Initial_Time_M"]}" : "${data["Initial_Time_M"]}")
+    sendEvent(name: "remainingTimeDisplay", value: (data?.containsKey('Initial_Time_H') && data["Initial_Time_H"] != '') ? "${data["Initial_Time_H"]}:${data["Initial_Time_M"]}" : "${data["Initial_Time_M"]}")
     sendEvent(name: "delayTime", value: delayTime)
-    sendEvent(name: "delayTimeDisplay", value: data["Reserve_Time_H"] ? "${data["Reserve_Time_H"]}:${data["Reserve_Time_M"]}" : "${data["Reserve_Time_M"]}")
+    sendEvent(name: "delayTimeDisplay", value: (data?.containsKey('Reserve_Time_H') && data["Reserve_Time_H"] != '') ? "${data["Reserve_Time_H"]}:${data["Reserve_Time_M"]}" : "${data["Reserve_Time_M"]}")
 
-    if (currentState != null)
-        sendEvent(name: "currentState", value: parent.cleanEnumValue(currentState, "@WM_STATE_"))
+    if (currentState != null && currentState != "") {
+        String currentStateName = parent.cleanEnumValue(currentState, "@WM_STATE_")
+        sendEvent(name: "currentState", value: currentStateName)
+        if (currentStateName =~ /power off/ ) {
+            sendEvent(name: "switch", value: 'off')
+        } else {
+            sendEvent(name: "switch", value: 'on')
+        }
+    }
+
 
     if (data?.containsKey('Error') ) {
       sendEvent(name: "error", value: data["Error"].toLowerCase())
     }
 
-    if (data["APCourse"] != null)
+    if (data["APCourse"] != null && data["APCourse"] != "")
         sendEvent(name: "course", value: data["APCourse"] != 0 ? data["APCourse"]?.toLowerCase() : "none")
-    if (data["SmartCourse"] != null)
+    if (data["SmartCourse"] != null && data["SmartCourse"] != "")
         sendEvent(name: "smartCourse", value: data["SmartCourse"] != 0 ? data["SmartCourse"]?.toLowerCase() : "none")
-    if (soilLevel != null)
+    if (soilLevel != null && soilLevel != "")
         sendEvent(name: "soilLevel", value: parent.cleanEnumValue(soilLevel, "@WM_MX_OPTION_SOIL_"))
-    if (spinSpeed != null)
+    if (spinSpeed != null && spinSpeed != "")
         sendEvent(name: "spinSpeed", value: parent.cleanEnumValue(spinSpeed, "@WM_MX_OPTION_SPIN_"))
-    if (temperatureLevel != null)
+    if (temperatureLevel != null && temperatureLevel != "")
         sendEvent(name: "temperatureLevel", value: parent.cleanEnumValue(temperatureLevel, "@WM_MX_OPTION_TEMP_"))
 }
 
