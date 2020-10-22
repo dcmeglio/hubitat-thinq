@@ -790,6 +790,15 @@ def cleanEnumValue(value, prefix) {
 	return value.replaceAll("^"+prefix,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase()
 }
 
+// check is map has an actual value
+private checkValue(data, String k) {
+  if (data?.containsKey(k)) {
+    if (data[k] != null && data[k] != '' && data[k] != 'null') {
+      return true
+    } else { return false }
+  } else { return false }
+}
+
 // V1 device methods
 def sendCommand(dev, command, option, key, value) {
 	logger("debug", "sendCommand(${dev}, ${key}, ${value})")

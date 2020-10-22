@@ -95,32 +95,46 @@ def processStateData(data) {
     def course = data["Course"]
     def error 
 
-    remainingTime += (data["Remain_Time_H"]*60*60)
-    remainingTime += (data["Remain_Time_M"]*60)
+    if (parent.checkValue(data,'Remain_Time_H')) {
+      remainingTime += (data["Remain_Time_H"]*60*60)
+    }
+    if (parent.checkValue(data,'Remain_Time_M')) {
+      remainingTime += (data["Remain_Time_M"]*60)
+    }
 
-    runTime += (data["Initial_Time_H"]*60*60)
-    runTime += (data["Initial_Time_M"]*60)
+    if (parent.checkValue(data,'Initial_Time_H')) {
+      runTime += (data["Initial_Time_H"]*60*60)
+    }
+    if (parent.checkValue(data,'Initial_Time_M')) {
+      runTime += (data["Initial_Time_M"]*60)
+    }
 
-    delayTime += (data["Reserve_Time_H"]*60*60)
-    delayTime += (data["Reserve_Time_M"]*60)
+    if (parent.checkValue(data,'Reserve_Time_H')) {
+      delayTime += (data["Reserve_Time_H"]*60*60)
+    }
+    if (parent.checkValue(data,'Reserve_Time_M')) {
+      delayTime += (data["Reserve_Time_M"]*60)
+    }
 
     if (currentState == "-")
         currentState = "power off"
 
     sendEvent(name: "runTime", value: runTime)
-    sendEvent(name: "runTimeDisplay", value: "${data["Remain_Time_H"]}:${data["Remain_Time_M"]}")
+    sendEvent(name: "runTimeDisplay", value: parent.checkValue(data,'Remain_Time_H') ? "${data["Remain_Time_H"]}:${data["Remain_Time_M"]}" : "${data["Remain_Time_M"]}")
     sendEvent(name: "remainingTime", value: remainingTime)
-    sendEvent(name: "remainingTimeDisplay", value: "${data["Initial_Time_H"]}:${data["Initial_Time_M"]}")
+    sendEvent(name: "remainingTimeDisplay", value: parent.checkValue(data,'Initial_Time_H') ? "${data["Initial_Time_H"]}:${data["Initial_Time_M"]}" : "${data["Initial_Time_M"]}")
     sendEvent(name: "delayTime", value: delayTime)
-    sendEvent(name: "delayTimeDisplay", value: "${data["Reserve_Time_H"]}:${data["Reserve_Time_M"]}")
+    sendEvent(name: "delayTimeDisplay", value: parent.checkValue(data,'Reserve_Time_H') ? "${data["Reserve_Time_H"]}:${data["Reserve_Time_M"]}" : "${data["Reserve_Time_M"]}")
     if (currentState != null)
         sendEvent(name: "currentState", value: parent.cleanEnumValue(currentState, "@DW_STATE_"))
-    sendEvent(name: "error", value: data["Error"]?.toLowerCase())
+    if (parent.checkValue(data,'Error')) {
+      sendEvent(name: "error", value: data["Error"].toLowerCase())
+    }
     // There is a typo in the API, fix it
     if (course == "Haeavy")
         course = "heavy"
     if (course != null)
         sendEvent(name: "course", value: course != 0 ? course?.toLowerCase() : "none")
-    if (data["SmartCourse"] != null)
+    if (parent.checkValue(data,'SmartCourse'))
         sendEvent(name: "smartCourse", value: data["SmartCourse"] != 0 ? data["SmartCourse"]?.toLowerCase() : "none")
 }

@@ -119,35 +119,28 @@ def processStateData(data) {
     def error
     def waterTemp = data["WaterTemp"] ?: ""
 
-    if (checkValue(data,'Remain_Time_H')) {
+    if (parent.checkValue(data,'Remain_Time_H')) {
       remainingTime += (data["Remain_Time_H"]*60*60)
     }
-    if (checkValue(data,'Remain_Time_M')) {
+    if (parent.checkValue(data,'Remain_Time_M')) {
       remainingTime += (data["Remain_Time_M"]*60)
-    } else {
-      remainingTime = 0
     }
 
-    if (checkValue(data,'Initial_Time_H')) {
+    if (parent.checkValue(data,'Initial_Time_H')) {
       runTime += (data["Initial_Time_H"]*60*60)
     }
-    if (checkValue(data,'Initial_Time_M')) {
+    if (parent.checkValue(data,'Initial_Time_M')) {
       runTime += (data["Initial_Time_M"]*60)
-    } else {
-      runTime = 0
     }
 
-    if (checkValue(data,'Reserve_Time_H')) {
+    if (parent.checkValue(data,'Reserve_Time_H')) {
       delayTime += (data["Reserve_Time_H"]*60*60)
     }
-    if (checkValue(data,'Reserve_Time_M')) {
+    if (parent.checkValue(data,'Reserve_Time_M')) {
       delayTime += (data["Reserve_Time_M"]*60)
-    } else {
-      delayTime = 0
     }
 
-
-    if (checkValue(data,'State')) {
+    if (parent.checkValue(data,'State')) {
         String currentStateName = parent.cleanEnumValue(data["State"], "@WM_STATE_")
         sendEvent(name: "currentState", value: currentStateName)
         if (currentStateName =~ /power off/ ) {
@@ -158,37 +151,28 @@ def processStateData(data) {
     }
 
     sendEvent(name: "runTime", value: runTime)
-    sendEvent(name: "runTimeDisplay", value: checkValue(data,'Remain_Time_H') ? "${data["Remain_Time_H"]}:${data["Remain_Time_M"]}" : "${data["Remain_Time_M"]}")
+    sendEvent(name: "runTimeDisplay", value: parent.checkValue(data,'Remain_Time_H') ? "${data["Remain_Time_H"]}:${data["Remain_Time_M"]}" : "${data["Remain_Time_M"]}")
     sendEvent(name: "remainingTime", value: remainingTime)
-    sendEvent(name: "remainingTimeDisplay", value: checkValue(data,'Initial_Time_H') ? "${data["Initial_Time_H"]}:${data["Initial_Time_M"]}" : "${data["Initial_Time_M"]}")
+    sendEvent(name: "remainingTimeDisplay", value: parent.checkValue(data,'Initial_Time_H') ? "${data["Initial_Time_H"]}:${data["Initial_Time_M"]}" : "${data["Initial_Time_M"]}")
     sendEvent(name: "delayTime", value: delayTime)
-    sendEvent(name: "delayTimeDisplay", value: checkValue(data,'Reserve_Time_H') ? "${data["Reserve_Time_H"]}:${data["Reserve_Time_M"]}" : "${data["Reserve_Time_M"]}")
+    sendEvent(name: "delayTimeDisplay", value: parent.checkValue(data,'Reserve_Time_H') ? "${data["Reserve_Time_H"]}:${data["Reserve_Time_M"]}" : "${data["Reserve_Time_M"]}")
 
-    if (checkValue(data,'Error')) {
+    if (parent.checkValue(data,'Error')) {
       sendEvent(name: "error", value: data["Error"].toLowerCase())
     }
 
-    if (checkValue(data,'APCourse'))
+    if (parent.checkValue(data,'APCourse'))
         sendEvent(name: "course", value: data["APCourse"] != 0 ? data["APCourse"]?.toLowerCase() : "none")
-    if (checkValue(data,'SmartCourse'))
+    if (parent.checkValue(data,'SmartCourse'))
         sendEvent(name: "smartCourse", value: data["SmartCourse"] != 0 ? data["SmartCourse"]?.toLowerCase() : "none")
-    if (checkValue(data,'Soil'))
+    if (parent.checkValue(data,'Soil'))
         sendEvent(name: "soilLevel", value: parent.cleanEnumValue(data["Soil"], "@WM_MX_OPTION_SOIL_"))
-    if (checkValue(data,'SpinSpeed'))
+    if (parent.checkValue(data,'SpinSpeed'))
         sendEvent(name: "spinSpeed", value: parent.cleanEnumValue(data["SpinSpeed"], "@WM_MX_OPTION_SPIN_"))
-    if (checkValue(data,'TempControl'))
+    if (parent.checkValue(data,'TempControl'))
         sendEvent(name: "temperatureLevel", value: parent.cleanEnumValue(data["TempControl"], "@WM_MX_OPTION_TEMP_"))
-    if (checkValue(data,'doorLock'))
+    if (parent.checkValue(data,'doorLock'))
         sendEvent(name: "doorLock", value: parent.cleanEnumValue(data["doorLock"], "@DOOR_LOCK_"))
-}
-
-// check is map has an actuale value
-private checkValue(data, String k) {
-  if (data?.containsKey(k)) {
-    if (data[k] != null && data[k] != '' && data[k] != 'null') {
-      return true
-    } else { return false }
-  } else { return false }
 }
 
 /**
