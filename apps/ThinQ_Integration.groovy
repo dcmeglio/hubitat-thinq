@@ -732,7 +732,7 @@ def getDeviceThinQVersion(dev) {
 
 // Common device state processing methods
 def getParsedValue(value, param, modelInfo) {
-	logger("debug", "getParsedValue(${value}, ${param}, ${modelInfo})")
+	logger("debug", "getParsedValue(${value}, ${param}, modelInfo[FILTERED])")
 
 	if (param == null)
 		return value
@@ -788,6 +788,15 @@ def cleanEnumValue(value, prefix) {
 		return ""
 
 	return value.replaceAll("^"+prefix,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase()
+}
+
+// check is map has an actual value
+private checkValue(data, String k) {
+  if (data?.containsKey(k)) {
+    if (data[k] != null && data[k] != '' && data[k] != 'null') {
+      return true
+    } else { return false }
+  } else { return false }
 }
 
 // V1 device methods
@@ -904,7 +913,7 @@ def getRTIData(workList) {
 }
 
 def decodeBinaryRTIMessage(protocol, modelInfo, data) {
-	logger("debug", "decodeBinaryRTIMessage(${protocol}, ${modelInfo}, ${data})")
+	logger("debug", "decodeBinaryRTIMessage(${protocol}, modelInfo[FILTERED], ${data})")
 
 	def output = [:]
 	def values = modelInfo.Value
@@ -969,7 +978,7 @@ def retrieveMqttDetails() {
 }
 
 def getParsedMqttValue(value, param, modelInfo) {
-	logger("debug", "getParsedMqttValue(${value}, ${param}, ${modelInfo})")
+	logger("debug", "getParsedMqttValue(${value}, ${param}, modelInfo[FILTERED])")
 
 	if (param == null)
 		return value
@@ -1000,13 +1009,27 @@ def processMqttMessage(dev, payload) {
 	}
 }
 
+def findMQTTDataNode(modelInfo, data) {
+	def controlWifi = modelInfo.ControlWifi
+	def key = controlWifi.keySet()[0]
+	if (controlWifi[key].containsKey("data")) {
+		def wifiData = controlWifi[key].data
+		if (data.containsKey(wifiData.keySet()[0]))
+			return data."${wifiData.keySet()[0]}"
+	}
+	logger("debug", "findMQTTDataNode(${data})")
+	return data
+}
+
 def processDeviceMonitoring(dev, payload) {
 	logger("debug", "processDeviceMonitoring(${dev}, ${payload})")
 
 	if (dev != null) {
 		def deviceId = dev.deviceNetworkId.replace("thinq:", "")
 		modelInfo = state.foundDevices.find { it.id == deviceId }?.modelJson
-		def stateData = decodeMQTTMessage(modelInfo, payload?.data?.state?.reported)
+		def dataNode = findMQTTDataNode(modelInfo, payload?.data?.state?.reported)
+		def stateData = decodeMQTTMessage(modelInfo, dataNode)
+
 		if (stateData != null)
 			dev.processStateData(stateData)
 	}
@@ -1059,6 +1082,8 @@ def decodeMQTTMessage(modelInfo, data) {
 			}
 		}
 	}
+
+	logger("debug", "decodeMQTTMessage(${output})")
 	return output
 }
 
