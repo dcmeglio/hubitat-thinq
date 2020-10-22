@@ -124,6 +124,8 @@ def processStateData(data) {
     }
     if (data?.containsKey('Remain_Time_M') ) {
       remainingTime += (data["Remain_Time_M"]*60)
+    } else {
+      remainingTime = 0
     }
 
     if (data?.containsKey('Initial_Time_H') ) {
@@ -131,6 +133,8 @@ def processStateData(data) {
     }
     if (data?.containsKey('Initial_Time_M') ) {
       runTime += (data["Initial_Time_M"]*60)
+    } else {
+      runTime = 0
     }
 
     if (data?.containsKey('Reserve_Time_H') ) {
@@ -138,6 +142,8 @@ def processStateData(data) {
     }
     if (data?.containsKey('Reserve_Time_M') ) {
       delayTime += (data["Reserve_Time_M"]*60)
+    } else {
+      delayTime = 0
     }
 
     if (data?.containsKey('type') && data.type == "monitoring") {
