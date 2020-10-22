@@ -21,6 +21,8 @@ metadata {
         attribute "runTimeDisplay", "string"
         attribute "remainingTime", "number"
         attribute "remainingTimeDisplay", "string"
+        attribute "delayTime", "number"
+        attribute "delayTimeDisplay", "string"
         attribute "currentState", "string"
         attribute "error", "string"
         attribute "course", "string"
@@ -110,6 +112,7 @@ def mqttClientStatus(String message) {
 def processStateData(data) {
     def runTime = 0
     def remainingTime = 0
+    def delayTime = 0
     def currentState = data["State"]
     def error
     def soilLevel = data["Soil"] ?: ""
@@ -118,12 +121,23 @@ def processStateData(data) {
 
     if (data?.containsKey('Remain_Time_H') ) {
       remainingTime += (data["Remain_Time_H"]*60*60)
+    }
+    if (data?.containsKey('Remain_Time_M') ) {
       remainingTime += (data["Remain_Time_M"]*60)
     }
 
     if (data?.containsKey('Initial_Time_H') ) {
       runTime += (data["Initial_Time_H"]*60*60)
+    }
+    if (data?.containsKey('Initial_Time_M') ) {
       runTime += (data["Initial_Time_M"]*60)
+    }
+
+    if (data?.containsKey('Reserve_Time_H') ) {
+      delayTime += (data["Reserve_Time_H"]*60*60)
+    }
+    if (data?.containsKey('Reserve_Time_M') ) {
+      delayTime += (data["Reserve_Time_M"]*60)
     }
 
     if (data?.containsKey('type') && data.type == "monitoring") {
@@ -131,9 +145,12 @@ def processStateData(data) {
     }
 
     sendEvent(name: "runTime", value: runTime)
-    sendEvent(name: "runTimeDisplay", value: "${data["Remain_Time_H"]}:${data["Remain_Time_M"]}")
+    sendEvent(name: "runTimeDisplay", value: data["Remain_Time_H"] ? "${data["Remain_Time_H"]}:${data["Remain_Time_M"]}" : "${data["Remain_Time_M"]}")
     sendEvent(name: "remainingTime", value: remainingTime)
-    sendEvent(name: "remainingTimeDisplay", value: "${data["Initial_Time_H"]}:${data["Initial_Time_M"]}")
+    sendEvent(name: "remainingTimeDisplay", value: data["Initial_Time_H"] ? "${data["Initial_Time_H"]}:${data["Initial_Time_M"]}" : "${data["Initial_Time_M"]}")
+    sendEvent(name: "delayTime", value: delayTime)
+    sendEvent(name: "delayTimeDisplay", value: data["Reserve_Time_H"] ? "${data["Reserve_Time_H"]}:${data["Reserve_Time_M"]}" : "${data["Reserve_Time_M"]}")
+
     if (currentState != null)
         sendEvent(name: "currentState", value: parent.cleanEnumValue(currentState, "@WM_STATE_"))
 
