@@ -116,53 +116,39 @@ def processStateData(data) {
     def runTime = 0
     def remainingTime = 0
     def delayTime = 0
-    def currentState = data["State"]
     def error
-    def soilLevel = data["Soil"] ?: ""
-    def spinSpeed = data["SpinSpeed"] ?: ""
     def waterTemp = data["WaterTemp"] ?: ""
-    def doorLock = data["doorLock"] ?: ""
 
-    if (data?.containsKey('Remain_Time_H') ) {
+    if (checkValue(data,'Remain_Time_H')) {
       remainingTime += (data["Remain_Time_H"]*60*60)
     }
-    if (data?.containsKey('Remain_Time_M') ) {
+    if (checkValue(data,'Remain_Time_M')) {
       remainingTime += (data["Remain_Time_M"]*60)
     } else {
       remainingTime = 0
     }
 
-    if (data?.containsKey('Initial_Time_H') ) {
+    if (checkValue(data,'Initial_Time_H')) {
       runTime += (data["Initial_Time_H"]*60*60)
     }
-    if (data?.containsKey('Initial_Time_M') ) {
+    if (checkValue(data,'Initial_Time_M')) {
       runTime += (data["Initial_Time_M"]*60)
     } else {
       runTime = 0
     }
 
-    if (data?.containsKey('Reserve_Time_H') ) {
+    if (checkValue(data,'Reserve_Time_H')) {
       delayTime += (data["Reserve_Time_H"]*60*60)
     }
-    if (data?.containsKey('Reserve_Time_M') ) {
+    if (checkValue(data,'Reserve_Time_M')) {
       delayTime += (data["Reserve_Time_M"]*60)
     } else {
       delayTime = 0
     }
 
-    if (data?.containsKey('type') && data.type == "monitoring") {
-        sendEvent(name: "switch", value: data.state.reported.online =~ /true/ ? 'on' : 'off')
-    }
 
-    sendEvent(name: "runTime", value: runTime)
-    sendEvent(name: "runTimeDisplay", value: (data?.containsKey('Remain_Time_H') && data["Remain_Time_H"] != '') ? "${data["Remain_Time_H"]}:${data["Remain_Time_M"]}" : "${data["Remain_Time_M"]}")
-    sendEvent(name: "remainingTime", value: remainingTime)
-    sendEvent(name: "remainingTimeDisplay", value: (data?.containsKey('Initial_Time_H') && data["Initial_Time_H"] != '') ? "${data["Initial_Time_H"]}:${data["Initial_Time_M"]}" : "${data["Initial_Time_M"]}")
-    sendEvent(name: "delayTime", value: delayTime)
-    sendEvent(name: "delayTimeDisplay", value: (data?.containsKey('Reserve_Time_H') && data["Reserve_Time_H"] != '') ? "${data["Reserve_Time_H"]}:${data["Reserve_Time_M"]}" : "${data["Reserve_Time_M"]}")
-
-    if (currentState != null && currentState != "") {
-        String currentStateName = parent.cleanEnumValue(currentState, "@WM_STATE_")
+    if (checkValue(data,'State')) {
+        String currentStateName = parent.cleanEnumValue(data["State"], "@WM_STATE_")
         sendEvent(name: "currentState", value: currentStateName)
         if (currentStateName =~ /power off/ ) {
             sendEvent(name: "switch", value: 'off')
@@ -171,25 +157,39 @@ def processStateData(data) {
         }
     }
 
+    sendEvent(name: "runTime", value: runTime)
+    sendEvent(name: "runTimeDisplay", value: checkValue(data,'Remain_Time_H') ? "${data["Remain_Time_H"]}:${data["Remain_Time_M"]}" : "${data["Remain_Time_M"]}")
+    sendEvent(name: "remainingTime", value: remainingTime)
+    sendEvent(name: "remainingTimeDisplay", value: checkValue(data,'Initial_Time_H') ? "${data["Initial_Time_H"]}:${data["Initial_Time_M"]}" : "${data["Initial_Time_M"]}")
+    sendEvent(name: "delayTime", value: delayTime)
+    sendEvent(name: "delayTimeDisplay", value: checkValue(data,'Reserve_Time_H') ? "${data["Reserve_Time_H"]}:${data["Reserve_Time_M"]}" : "${data["Reserve_Time_M"]}")
 
-    if (data?.containsKey('Error') ) {
+    if (checkValue(data,'Error')) {
       sendEvent(name: "error", value: data["Error"].toLowerCase())
     }
 
-    if (data["APCourse"] != null && data["APCourse"] != "")
+    if (checkValue(data,'APCourse'))
         sendEvent(name: "course", value: data["APCourse"] != 0 ? data["APCourse"]?.toLowerCase() : "none")
-    if (data["SmartCourse"] != null && data["SmartCourse"] != "")
+    if (checkValue(data,'SmartCourse'))
         sendEvent(name: "smartCourse", value: data["SmartCourse"] != 0 ? data["SmartCourse"]?.toLowerCase() : "none")
-    if (soilLevel != null && soilLevel != "")
-        sendEvent(name: "soilLevel", value: parent.cleanEnumValue(soilLevel, "@WM_MX_OPTION_SOIL_"))
-    if (spinSpeed != null && spinSpeed != "")
-        sendEvent(name: "spinSpeed", value: parent.cleanEnumValue(spinSpeed, "@WM_MX_OPTION_SPIN_"))
-    if (temperatureLevel != null && temperatureLevel != "")
-        sendEvent(name: "temperatureLevel", value: parent.cleanEnumValue(temperatureLevel, "@WM_MX_OPTION_TEMP_"))
-    if (doorLock != null && doorLock != "")
-        sendEvent(name: "doorLock", value: parent.cleanEnumValue(doorLock, "@DOOR_LOCK_"))
+    if (checkValue(data,'Soil'))
+        sendEvent(name: "soilLevel", value: parent.cleanEnumValue(data["Soil"], "@WM_MX_OPTION_SOIL_"))
+    if (checkValue(data,'SpinSpeed'))
+        sendEvent(name: "spinSpeed", value: parent.cleanEnumValue(data["SpinSpeed"], "@WM_MX_OPTION_SPIN_"))
+    if (checkValue(data,'TempControl'))
+        sendEvent(name: "temperatureLevel", value: parent.cleanEnumValue(data["TempControl"], "@WM_MX_OPTION_TEMP_"))
+    if (checkValue(data,'doorLock'))
+        sendEvent(name: "doorLock", value: parent.cleanEnumValue(data["doorLock"], "@DOOR_LOCK_"))
 }
 
+// check is map has an actuale value
+private checkValue(data, String k) {
+  if (data?.containsKey(k)) {
+    if (data[k] != null && data[k] != '' && data[k] != 'null') {
+      return true
+    } else { return false }
+  } else { return false }
+}
 
 /**
 * @param level Level to log at, see LOG_LEVELS for options
