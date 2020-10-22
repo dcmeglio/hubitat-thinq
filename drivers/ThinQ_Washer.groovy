@@ -30,6 +30,7 @@ metadata {
         attribute "soilLevel", "string"
         attribute "spinSpeed", "string"
         attribute "temperatureLevel", "string"
+        attribute "doorLock", "string"
     }
 
   preferences {
@@ -120,6 +121,7 @@ def processStateData(data) {
     def soilLevel = data["Soil"] ?: ""
     def spinSpeed = data["SpinSpeed"] ?: ""
     def waterTemp = data["WaterTemp"] ?: ""
+    def doorLock = data["doorLock"] ?: ""
 
     if (data?.containsKey('Remain_Time_H') ) {
       remainingTime += (data["Remain_Time_H"]*60*60)
@@ -184,6 +186,8 @@ def processStateData(data) {
         sendEvent(name: "spinSpeed", value: parent.cleanEnumValue(spinSpeed, "@WM_MX_OPTION_SPIN_"))
     if (temperatureLevel != null && temperatureLevel != "")
         sendEvent(name: "temperatureLevel", value: parent.cleanEnumValue(temperatureLevel, "@WM_MX_OPTION_TEMP_"))
+    if (doorLock != null && doorLock != "")
+        sendEvent(name: "doorLock", value: parent.cleanEnumValue(doorLock, "@DOOR_LOCK_"))
 }
 
 
