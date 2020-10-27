@@ -343,6 +343,10 @@ def getStandardHeaders() {
 				"x-thinq-app-ver": "3.0.1700",
 				"Host": "aic-service.lgthinq.com:46030"
 			]
+	if (state.countryCode != null)
+		headers << ["x-country-code": state.countryCode]
+	if (state.langCode != null)
+		headers << ["x-language-code": state.langCode]
 	if (state.access_token != null)
 		headers << ["x-emp-token": state.access_token]
 	if (state.user_number != null)
