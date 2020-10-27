@@ -1036,7 +1036,6 @@ def processDeviceMonitoring(dev, payload) {
 
 		if (stateData != null)
 			dev.processStateData(stateData)
-		}
 	}
 }
 
