@@ -331,8 +331,8 @@ def getStandardHeaders() {
 	def headers = [
 				"Accept": "application/json",
 				"x-client-id": state.client_id,
-				"x-country-code": state.countryCode,
-				"x-language-code": state.langCode,
+				"x-country-code": 'US', // Default before selection
+				"x-language-code": 'en-US', // Default before selection
 				"x-message-id": "VJMcbWuRSy2XMqMupH30kA",
 				"x-api-key": "VGhpblEyLjAgU0VSVklDRQ==",
 				"x-service-code": "SVC202",
