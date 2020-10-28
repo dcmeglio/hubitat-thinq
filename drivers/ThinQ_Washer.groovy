@@ -114,17 +114,13 @@ def processStateData(data) {
     logger("debug", "processStateData(${data})")
 
     def runTime = 0
+    def runTimeDisplay = 0
     def remainingTime = 0
+    def remainingTimeDisplay = 0
     def delayTime = 0
-    def error
-    def waterTemp = data["WaterTemp"] ?: ""
+    def delayTimeDisplay = 0
 
-    if (parent.checkValue(data,'Remain_Time_H')) {
-      remainingTime += (data["Remain_Time_H"]*60*60)
-    }
-    if (parent.checkValue(data,'Remain_Time_M')) {
-      remainingTime += (data["Remain_Time_M"]*60)
-    }
+    def error
 
     if (parent.checkValue(data,'Initial_Time_H')) {
       runTime += (data["Initial_Time_H"]*60*60)
@@ -132,12 +128,35 @@ def processStateData(data) {
     if (parent.checkValue(data,'Initial_Time_M')) {
       runTime += (data["Initial_Time_M"]*60)
     }
+    if (parent.checkValue(data,'Remain_Time_H')) {
+      runTimeDisplay = "${data["Remain_Time_H"]}:${data["Remain_Time_M"]}"
+    } else if (parent.checkValue(data,'Remain_Time_M')) {
+      runTimeDisplay = "${data["Remain_Time_M"]}"
+    }
+
+
+    if (parent.checkValue(data,'Remain_Time_H')) {
+      remainingTime += (data["Remain_Time_H"]*60*60)
+    }
+    if (parent.checkValue(data,'Remain_Time_M')) {
+      remainingTime += (data["Remain_Time_M"]*60)
+    }
+    if (parent.checkValue(data,'Initial_Time_H')) {
+      remainingTimeDisplay = "${data["Initial_Time_H"]}:${data["Initial_Time_M"]}"
+    } else if (parent.checkValue(data,'Initial_Time_M')) {
+      remainingTimeDisplay = "${data["Initial_Time_M"]}"
+    }
 
     if (parent.checkValue(data,'Reserve_Time_H')) {
       delayTime += (data["Reserve_Time_H"]*60*60)
     }
     if (parent.checkValue(data,'Reserve_Time_M')) {
       delayTime += (data["Reserve_Time_M"]*60)
+    }
+    if (parent.checkValue(data,'Reserve_Time_H')) {
+      delayTimeDisplay = "${data["Reserve_Time_H"]}:${data["Reserve_Time_M"]}"
+    } else if (parent.checkValue(data,'Reserve_Time_M')) {
+      delayTimeDisplay = "${data["Reserve_Time_M"]}"
     }
 
     if (parent.checkValue(data,'State')) {
@@ -151,11 +170,11 @@ def processStateData(data) {
     }
 
     sendEvent(name: "runTime", value: runTime)
-    sendEvent(name: "runTimeDisplay", value: parent.checkValue(data,'Remain_Time_H') ? "${data["Remain_Time_H"]}:${data["Remain_Time_M"]}" : "${data["Remain_Time_M"]}")
+    sendEvent(name: "runTimeDisplay", value: runTimeDisplay)
     sendEvent(name: "remainingTime", value: remainingTime)
-    sendEvent(name: "remainingTimeDisplay", value: parent.checkValue(data,'Initial_Time_H') ? "${data["Initial_Time_H"]}:${data["Initial_Time_M"]}" : "${data["Initial_Time_M"]}")
+    sendEvent(name: "remainingTimeDisplay", value: remainingTimeDisplay)
     sendEvent(name: "delayTime", value: delayTime)
-    sendEvent(name: "delayTimeDisplay", value: parent.checkValue(data,'Reserve_Time_H') ? "${data["Reserve_Time_H"]}:${data["Reserve_Time_M"]}" : "${data["Reserve_Time_M"]}")
+    sendEvent(name: "delayTimeDisplay", value: delayTimeDisplay)
 
     if (parent.checkValue(data,'Error')) {
       sendEvent(name: "error", value: data["Error"].toLowerCase())
