@@ -21,6 +21,7 @@ metadata {
         attribute "runTimeDisplay", "string"
         attribute "remainingTime", "number"
         attribute "remainingTimeDisplay", "string"
+        attribute "finishTimeDisplay", "string"
         attribute "currentState", "string"
         attribute "error", "string"
         attribute "course", "string"
