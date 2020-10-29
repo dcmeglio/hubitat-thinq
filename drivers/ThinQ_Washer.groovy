@@ -23,6 +23,7 @@ metadata {
         attribute "remainingTimeDisplay", "string"
         attribute "delayTime", "number"
         attribute "delayTimeDisplay", "string"
+        attribute "finishTimeDisplay", "string"
         attribute "currentState", "string"
         attribute "error", "string"
         attribute "course", "string"
@@ -30,15 +31,16 @@ metadata {
         attribute "soilLevel", "string"
         attribute "spinSpeed", "string"
         attribute "temperatureLevel", "string"
+        attribute "temperatureTarget", "string"
         attribute "doorLock", "string"
     }
 
-  preferences {
-    section { // General
-      input name: "logLevel", title: "Log Level", type: "enum", options: LOG_LEVELS, defaultValue: DEFAULT_LOG_LEVEL, required: false
-      input name: "logDescText", title: "Log Description Text", type: "bool", defaultValue: false, required: false
+    preferences {
+      section { // General
+        input name: "logLevel", title: "Log Level", type: "enum", options: LOG_LEVELS, defaultValue: DEFAULT_LOG_LEVEL, required: false
+        input name: "logDescText", title: "Log Description Text", type: "bool", defaultValue: false, required: false
+      }
     }
-  }
 }
 
 def uninstalled() {
@@ -62,8 +64,8 @@ def initialize() {
 def mqttConnectUntilSuccessful() {
   logger("debug", "mqttConnectUntilSuccessful()")
 
-	try {
-		def mqtt = parent.retrieveMqttDetails()
+  try {
+    def mqtt = parent.retrieveMqttDetails()
 
     interfaces.mqtt.connect(mqtt.server,
                             mqtt.clientId,
@@ -77,14 +79,14 @@ def mqttConnectUntilSuccessful() {
     for (sub in mqtt.subscriptions) {
         interfaces.mqtt.subscribe(sub, 0)
     }
-		return true
-	}
-	catch (e)
-	{
+    return true
+  }
+  catch (e)
+  {
     logger("warn", "Lost connection to MQTT, retrying in 15 seconds ${e}")
-		runIn(15, "mqttConnectUntilSuccessful")
-		return false
-	}
+    runIn(15, "mqttConnectUntilSuccessful")
+    return false
+  }
 }
 
 def parse(message) {
@@ -114,12 +116,11 @@ def processStateData(data) {
     logger("debug", "processStateData(${data})")
 
     def runTime = 0
-    def runTimeDisplay = 0
+    def runTimeDisplay = '00:00:00'
     def remainingTime = 0
-    def remainingTimeDisplay = 0
+    def remainingTimeDisplay = '00:00:00'
     def delayTime = 0
-    def delayTimeDisplay = 0
-
+    def delayTimeDisplay = '00:00:00'
     def error
 
     if (parent.checkValue(data,'Initial_Time_H')) {
@@ -128,12 +129,7 @@ def processStateData(data) {
     if (parent.checkValue(data,'Initial_Time_M')) {
       runTime += (data["Initial_Time_M"]*60)
     }
-    if (parent.checkValue(data,'Remain_Time_H')) {
-      runTimeDisplay = "${data["Remain_Time_H"]}:${data["Remain_Time_M"]}"
-    } else if (parent.checkValue(data,'Remain_Time_M')) {
-      runTimeDisplay = "${data["Remain_Time_M"]}"
-    }
-
+    runTimeDisplay = parent.convertSecondsToTime(runTime)
 
     if (parent.checkValue(data,'Remain_Time_H')) {
       remainingTime += (data["Remain_Time_H"]*60*60)
@@ -141,11 +137,13 @@ def processStateData(data) {
     if (parent.checkValue(data,'Remain_Time_M')) {
       remainingTime += (data["Remain_Time_M"]*60)
     }
-    if (parent.checkValue(data,'Initial_Time_H')) {
-      remainingTimeDisplay = "${data["Initial_Time_H"]}:${data["Initial_Time_M"]}"
-    } else if (parent.checkValue(data,'Initial_Time_M')) {
-      remainingTimeDisplay = "${data["Initial_Time_M"]}"
+    remainingTimeDisplay = parent.convertSecondsToTime(remainingTime)
+
+    Date currentTime = new Date()
+    use(groovy.time.TimeCategory) {
+      currentTime = currentTime + (remainingTime as int).seconds
     }
+    def finishTimeDisplay = currentTime.format("yyyy-MM-dd'T'HH:mm:ssZ", location.timeZone)
 
     if (parent.checkValue(data,'Reserve_Time_H')) {
       delayTime += (data["Reserve_Time_H"]*60*60)
@@ -153,35 +151,40 @@ def processStateData(data) {
     if (parent.checkValue(data,'Reserve_Time_M')) {
       delayTime += (data["Reserve_Time_M"]*60)
     }
-    if (parent.checkValue(data,'Reserve_Time_H')) {
-      delayTimeDisplay = "${data["Reserve_Time_H"]}:${data["Reserve_Time_M"]}"
-    } else if (parent.checkValue(data,'Reserve_Time_M')) {
-      delayTimeDisplay = "${data["Reserve_Time_M"]}"
-    }
+    delayTimeDisplay = parent.convertSecondsToTime(delayTime)
 
     if (parent.checkValue(data,'State')) {
         String currentStateName = parent.cleanEnumValue(data["State"], "@WM_STATE_")
         sendEvent(name: "currentState", value: currentStateName)
-        if (currentStateName =~ /power off/ ) {
-            sendEvent(name: "switch", value: 'off')
+        if(logDescText) {
+          log.info "${device.displayName} CurrentState: ${currentStateName}"
         } else {
-            sendEvent(name: "switch", value: 'on')
+          logger("info", "CurrentState: ${currentStateName}")
+        }
+
+        def currentStateSwitch = (currentStateName =~ /power off/ ? 'off' : 'on')
+        sendEvent(name: "switch", value: currentStateSwitch, descriptionText: "Was turned ${currentStateSwitch}")
+        if(logDescText) {
+          log.info "${device.displayName} Was turned ${currentStateSwitch}"
+        } else {
+          logger("info", "Was turned ${currentStateSwitch}")
         }
     }
 
-    sendEvent(name: "runTime", value: runTime)
-    sendEvent(name: "runTimeDisplay", value: runTimeDisplay)
-    sendEvent(name: "remainingTime", value: remainingTime)
-    sendEvent(name: "remainingTimeDisplay", value: remainingTimeDisplay)
-    sendEvent(name: "delayTime", value: delayTime)
-    sendEvent(name: "delayTimeDisplay", value: delayTimeDisplay)
+    sendEvent(name: "runTime", value: runTime, unit: "seconds")
+    sendEvent(name: "runTimeDisplay", value: runTimeDisplay, unit: "hh:mm:ss")
+    sendEvent(name: "remainingTime", value: remainingTime, unit: "seconds")
+    sendEvent(name: "remainingTimeDisplay", value: remainingTimeDisplay, unit: "hh:mm:ss")
+    sendEvent(name: "delayTime", value: delayTime, unit: "seconds")
+    sendEvent(name: "delayTimeDisplay", value: delayTimeDisplay, unit: "hh:mm:ss")
+    sendEvent(name: "finishTimeDisplay", value: finishTimeDisplay, unit: "hh:mm:ss")
 
     if (parent.checkValue(data,'Error')) {
       sendEvent(name: "error", value: data["Error"].toLowerCase())
     }
 
-    if (parent.checkValue(data,'APCourse'))
-        sendEvent(name: "course", value: data["APCourse"] != 0 ? data["APCourse"]?.toLowerCase() : "none")
+    if (parent.checkValue(data,'Course'))
+        sendEvent(name: "course", value: data["Course"] != 0 ? data["Course"]?.toLowerCase() : "none")
     if (parent.checkValue(data,'SmartCourse'))
         sendEvent(name: "smartCourse", value: data["SmartCourse"] != 0 ? data["SmartCourse"]?.toLowerCase() : "none")
     if (parent.checkValue(data,'Soil'))
@@ -192,6 +195,8 @@ def processStateData(data) {
         sendEvent(name: "temperatureLevel", value: parent.cleanEnumValue(data["TempControl"], "@WM_MX_OPTION_TEMP_"))
     if (parent.checkValue(data,'doorLock'))
         sendEvent(name: "doorLock", value: parent.cleanEnumValue(data["doorLock"], "@DOOR_LOCK_"))
+    if (parent.checkValue(data,'temp'))
+        sendEvent(name: "temperatureTarget", value: data["temp"]?.split("_")?.getAt(1))
 }
 
 /**
