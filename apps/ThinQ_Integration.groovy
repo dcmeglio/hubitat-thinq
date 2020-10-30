@@ -135,9 +135,12 @@ preferences {
 	"opCourseFLUpper25inchBaseUS": "OPCourse",
 	"apCourseFLUpper25inchBaseUS": "APCourse",
 	"downloadedCourseFLUpper25inchBaseUS": "SmartCourse",
+	"downloadedCourseFL24inchBaseTitan": "SmartCourse",
 	"smartCourseDryer27inchBase": "SmartCourse",
+	"smartCourseFL24inchBaseTitan": "SmartCourse",
 	"downloadedCourseDryer27inchBase": "SmartCourse",
-	"courseDryer27inchBase": "Course"
+	"courseDryer27inchBase": "Course",
+	"courseFL24inchBaseTitan": "Course"
 ]
 
 def prefMain() {
@@ -802,6 +805,18 @@ private checkValue(data, String k) {
     } else { return false }
   } else { return false }
 }
+
+// Converts seconds to time hh:mm:ss
+private convertSecondsToTime(int sec) {
+  long millis = sec * 1000
+  long hours = java.util.concurrent.TimeUnit.MILLISECONDS.toHours(millis)
+  long minutes = java.util.concurrent.TimeUnit.MILLISECONDS.toMinutes(millis) % java.util.concurrent.TimeUnit.HOURS.toMinutes(1)
+  long seconds = java.util.concurrent.TimeUnit.MILLISECONDS.toSeconds(millis) % java.util.concurrent.TimeUnit.MINUTES.toSeconds(1)
+  String timeString = String.format("%02d:%02d:%02d", Math.abs(hours), Math.abs(minutes), Math.abs(seconds))
+
+  return timeString
+}
+
 
 // V1 device methods
 def sendCommand(dev, command, option, key, value) {
