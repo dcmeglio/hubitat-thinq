@@ -790,11 +790,12 @@ def getValueDefinition(name, values) {
 }
 
 def cleanEnumValue(value, prefix) {
-	logger("info", "cleanEnumValue(${value}, ${prefix})")
 	if (value == null)
 		return ""
 
-	return value.replaceAll("^"+prefix,"").replaceAll(/_W$/,"").replaceAll(/_/," ").toLowerCase()
+	def val = value.replaceAll("^"+prefix,"").replaceAll(/(_[A-Za-z]{2})?_W$/,"").replaceAll(/_/," ").toLowerCase()
+	logger("info", "cleanEnumValue(${value}, ${prefix}) = ${val}")
+  return val
 }
 
 // check is map has an actual value
