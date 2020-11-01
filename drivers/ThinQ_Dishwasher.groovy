@@ -139,7 +139,6 @@ def processStateData(data) {
       currentTime = currentTime + (remainingTime as int).seconds
     }
     def finishTimeDisplay = currentTime.format("yyyy-MM-dd'T'HH:mm:ssZ", location.timeZone)
-    yyyy-MM-dd'T'HH:mm:ss.SSSXX
 
     if (parent.checkValue(data,'Reserve_Time_H')) {
       delayTime += (data["Reserve_Time_H"]*60*60)
