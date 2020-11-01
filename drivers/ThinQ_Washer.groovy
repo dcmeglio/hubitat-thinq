@@ -28,6 +28,7 @@ metadata {
         attribute "error", "string"
         attribute "course", "string"
         attribute "smartCourse", "string"
+        attribute "remoteStart", "string"
         attribute "soilLevel", "string"
         attribute "spinSpeed", "string"
         attribute "temperatureLevel", "string"
@@ -187,14 +188,16 @@ def processStateData(data) {
         sendEvent(name: "course", value: data["Course"] != 0 ? data["Course"]?.toLowerCase() : "none")
     if (parent.checkValue(data,'SmartCourse'))
         sendEvent(name: "smartCourse", value: data["SmartCourse"] != 0 ? data["SmartCourse"]?.toLowerCase() : "none")
+    if (parent.checkValue(data,'remoteStart'))
+        sendEvent(name: "remoteStart", value: parent.cleanEnumValue(data["remoteStart"], "@CP_"))
     if (parent.checkValue(data,'Soil'))
-        sendEvent(name: "soilLevel", value: parent.cleanEnumValue(data["Soil"], "@WM_MX_OPTION_SOIL_"))
+        sendEvent(name: "soilLevel", value: parent.cleanEnumValue(data["Soil"], "@WM_.*_OPTION_SOIL_"))
     if (parent.checkValue(data,'SpinSpeed'))
-        sendEvent(name: "spinSpeed", value: parent.cleanEnumValue(data["SpinSpeed"], "@WM_MX_OPTION_SPIN_"))
+        sendEvent(name: "spinSpeed", value: parent.cleanEnumValue(data["SpinSpeed"], "@WM_.*_OPTION_SPIN_"))
     if (parent.checkValue(data,'TempControl'))
-        sendEvent(name: "temperatureLevel", value: parent.cleanEnumValue(data["TempControl"], "@WM_MX_OPTION_TEMP_"))
+        sendEvent(name: "temperatureLevel", value: parent.cleanEnumValue(data["TempControl"], "@WM_.*_OPTION_TEMP_"))
     if (parent.checkValue(data,'doorLock'))
-        sendEvent(name: "doorLock", value: parent.cleanEnumValue(data["doorLock"], "@DOOR_LOCK_"))
+        sendEvent(name: "doorLock", value: parent.cleanEnumValue(data["doorLock"], "@CP_"))
     if (parent.checkValue(data,'temp'))
         sendEvent(name: "temperatureTarget", value: data["temp"]?.split("_")?.getAt(1))
 }
