@@ -155,21 +155,25 @@ def processStateData(data) {
     delayTimeDisplay = parent.convertSecondsToTime(delayTime)
 
     if (parent.checkValue(data,'State')) {
-        String currentStateName = parent.cleanEnumValue(data["State"], "@WM_STATE_")
-        sendEvent(name: "currentState", value: currentStateName)
+      String currentStateName = parent.cleanEnumValue(data["State"], "@WM_STATE_")
+      if (getCurrentValue("currentState") != currentStateName) {
         if(logDescText) {
           log.info "${device.displayName} CurrentState: ${currentStateName}"
         } else {
           logger("info", "CurrentState: ${currentStateName}")
         }
+      }
+      sendEvent(name: "currentState", value: currentStateName)
 
-        def currentStateSwitch = (currentStateName =~ /power off/ ? 'off' : 'on')
-        sendEvent(name: "switch", value: currentStateSwitch, descriptionText: "Was turned ${currentStateSwitch}")
+      def currentStateSwitch = (currentStateName =~ /power off/ ? 'off' : 'on')
+      if (getCurrentValue("switch") != currentStateSwitch) {
         if(logDescText) {
-          log.info "${device.displayName} Was turned ${currentStateSwitch}"
+            log.info "${device.displayName} Was turned ${currentStateSwitch}"
         } else {
           logger("info", "Was turned ${currentStateSwitch}")
         }
+      }
+      sendEvent(name: "switch", value: currentStateSwitch, descriptionText: "Was turned ${currentStateSwitch}")
     }
 
     sendEvent(name: "runTime", value: runTime, unit: "seconds")
@@ -191,11 +195,11 @@ def processStateData(data) {
     if (parent.checkValue(data,'remoteStart'))
         sendEvent(name: "remoteStart", value: parent.cleanEnumValue(data["remoteStart"], "@CP_"))
     if (parent.checkValue(data,'Soil'))
-        sendEvent(name: "soilLevel", value: parent.cleanEnumValue(data["Soil"], "@WM_.*_OPTION_SOIL_"))
+        sendEvent(name: "soilLevel", value: parent.cleanEnumValue(data["Soil"], ["@WM_.*_OPTION_SOIL_","@WM_TERM_"]))
     if (parent.checkValue(data,'SpinSpeed'))
-        sendEvent(name: "spinSpeed", value: parent.cleanEnumValue(data["SpinSpeed"], "@WM_.*_OPTION_SPIN_"))
+        sendEvent(name: "spinSpeed", value: parent.cleanEnumValue(data["SpinSpeed"], ["@WM_.*_OPTION_SPIN_","@WM_TERM_"]))
     if (parent.checkValue(data,'TempControl'))
-        sendEvent(name: "temperatureLevel", value: parent.cleanEnumValue(data["TempControl"], "@WM_.*_OPTION_TEMP_"))
+        sendEvent(name: "temperatureLevel", value: parent.cleanEnumValue(data["TempControl"], ["@WM_.*_OPTION_TEMP_","@WM_TERM_"]))
     if (parent.checkValue(data,'doorLock'))
         sendEvent(name: "doorLock", value: parent.cleanEnumValue(data["doorLock"], "@CP_"))
     if (parent.checkValue(data,'temp'))
