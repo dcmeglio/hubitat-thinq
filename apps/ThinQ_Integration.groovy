@@ -769,7 +769,7 @@ def getParsedValue(value, param, modelInfo) {
 		case "range":
 			return value
 		case "enum":
-			return param?.option[value.toString()] ?: value
+			return param?.option[value.toString()] ?: param?.option[value] ?: value
 		case "reference":
 			def refField = param.option[0]
 			if (refField)
