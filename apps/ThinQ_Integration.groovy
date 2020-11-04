@@ -915,7 +915,7 @@ def getRTIData(workList) {
 
 					if (modelInfo) {
 						if (modelInfo?.Monitoring?.type == "BINARY(BYTE)") {
-							result[deviceId] = decodeBinaryRTIMessage(modelInfo.Monitoring.protocol, modelInfo, data)
+							result[deviceId] = decodeBinaryRTIMessage(modelInfo.Monitoring.protocol, modelInfo, data, returnCode)
 						}
 						else if (modelInfo?.Monitoring?.type == "THINQ2") {
 							logger("error", "getRTIData(${workList}) - Received RTI Data for Thinq2 device ${deviceId} this shouldn't happen...")
@@ -932,8 +932,8 @@ def getRTIData(workList) {
 	return result
 }
 
-def decodeBinaryRTIMessage(protocol, modelInfo, data) {
-	logger("debug", "decodeBinaryRTIMessage(${protocol}, modelInfo[FILTERED], ${data})")
+def decodeBinaryRTIMessage(protocol, modelInfo, data, returnCode) {
+	logger("debug", "decodeBinaryRTIMessage(${protocol}, modelInfo[FILTERED], ${data}, ${returnCode})")
 
 	def output = [:]
 	def values = modelInfo.Value
@@ -957,6 +957,9 @@ def decodeBinaryRTIMessage(protocol, modelInfo, data) {
 			output."$name" = parsedValue
 		}
 	}
+	// Ugly hack to handle devices that report disconnected when they're off
+	if (returnCode == "0106")
+		output.State = "@WM_STATE_POWER_OFF_W"
 	return output
 }
 
