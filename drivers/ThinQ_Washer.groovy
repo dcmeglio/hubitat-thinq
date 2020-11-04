@@ -156,7 +156,7 @@ def processStateData(data) {
 
     if (parent.checkValue(data,'State')) {
       String currentStateName = parent.cleanEnumValue(data["State"], "@WM_STATE_")
-      if (getCurrentValue("currentState") != currentStateName) {
+      if (device.currentValue("currentState") != currentStateName) {
         if(logDescText) {
           log.info "${device.displayName} CurrentState: ${currentStateName}"
         } else {
@@ -166,7 +166,7 @@ def processStateData(data) {
       sendEvent(name: "currentState", value: currentStateName)
 
       def currentStateSwitch = (currentStateName =~ /power off/ ? 'off' : 'on')
-      if (getCurrentValue("switch") != currentStateSwitch) {
+      if (device.currentValue("switch") != currentStateSwitch) {
         if(logDescText) {
             log.info "${device.displayName} Was turned ${currentStateSwitch}"
         } else {
