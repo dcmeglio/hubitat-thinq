@@ -195,7 +195,7 @@ def processStateData(data) {
     if (parent.checkValue(data,'remoteStart'))
         sendEvent(name: "remoteStart", value: parent.cleanEnumValue(data["remoteStart"], "@CP_"))
     if (parent.checkValue(data,'Soil'))
-        sendEvent(name: "soilLevel", value: parent.cleanEnumValue(data["Soil"], ["@WM_.*_OPTION_SOIL_","@WM_TERM_"]))
+        sendEvent(name: "soilLevel", value: parent.cleanEnumValue(data["Soil"], ["@WM_.*_OPTION_SOIL_","@WM_.*_OPTION_WASH_", "@WM_TERM_"]))
     if (parent.checkValue(data,'SpinSpeed'))
         sendEvent(name: "spinSpeed", value: parent.cleanEnumValue(data["SpinSpeed"], ["@WM_.*_OPTION_SPIN_","@WM_TERM_"]))
     if (parent.checkValue(data,'TempControl'))
