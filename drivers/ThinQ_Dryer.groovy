@@ -150,21 +150,25 @@ def processStateData(data) {
     delayTimeDisplay = parent.convertSecondsToTime(delayTime)
 
     if (parent.checkValue(data,'State')) {
-        String currentStateName = parent.cleanEnumValue(data["State"], "@WM_STATE_")
-        sendEvent(name: "currentState", value: currentStateName)
+      String currentStateName = parent.cleanEnumValue(data["State"], "@WM_STATE_")
+      if (device.currentValue("currentState") != currentStateName) {
         if(logDescText) {
           log.info "${device.displayName} CurrentState: ${currentStateName}"
         } else {
           logger("info", "CurrentState: ${currentStateName}")
         }
+      }
+      sendEvent(name: "currentState", value: currentStateName)
 
-        def currentStateSwitch = (currentStateName =~ /power off/ ? 'off' : 'on')
-        sendEvent(name: "switch", value: currentStateSwitch, descriptionText: "Was turned ${currentStateSwitch}")
+      def currentStateSwitch = (currentStateName =~ /power off/ ? 'off' : 'on')
+      if (device.currentValue("switch") != currentStateSwitch) {
         if(logDescText) {
-          log.info "${device.displayName} Was turned ${currentStateSwitch}"
+            log.info "${device.displayName} Was turned ${currentStateSwitch}"
         } else {
           logger("info", "Was turned ${currentStateSwitch}")
         }
+      }
+      sendEvent(name: "switch", value: currentStateSwitch, descriptionText: "Was turned ${currentStateSwitch}")
     }
 
     sendEvent(name: "runTime", value: runTime, unit: "seconds")

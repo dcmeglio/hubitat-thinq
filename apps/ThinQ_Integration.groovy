@@ -790,11 +790,24 @@ def getValueDefinition(name, values) {
 }
 
 def cleanEnumValue(value, prefix) {
-	if (value == null)
-		return ""
+  def val = ""
 
-	def val = value.replaceAll("^"+prefix,"").replaceAll(/(_[A-Za-z]{2})?_W$/,"").replaceAll(/_/," ").toLowerCase()
-	logger("info", "cleanEnumValue(${value}, ${prefix}) = ${val}")
+  if (value == null) { return val }
+
+  if (prefix.class == String) {
+    val = value.replaceAll("^"+prefix,"").replaceAll(/(_[A-Za-z]{2})?_W$/,"").replaceAll(/_/," ").toLowerCase()
+  }
+
+  if (prefix.class == ArrayList) {
+    for ( p in prefix ) {
+      if (value.matches(/^$p.*/)) {
+        val = value.replaceAll("^"+p,"").replaceAll(/(_[A-Za-z]{2})?_W$/,"").replaceAll(/_/," ").toLowerCase()
+        break
+      }
+    }
+  }
+
+  logger("info", "cleanEnumValue(${value}, ${prefix}) = ${val}")
   return val
 }
 
