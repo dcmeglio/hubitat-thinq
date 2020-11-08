@@ -1064,7 +1064,7 @@ def findMQTTDataNode(modelInfo, data) {
 	def controlWifi = modelInfo.ControlWifi
 	def key = controlWifi.keySet()[0]
 	if (modelInfo?.Config?.targetRoot != null) 
-		return data."${modelInfo?.Config?.targetRoot}"
+		return data."${modelInfo.Config.targetRoot}"
 	else if (controlWifi[key].containsKey("data")) {
 		def wifiData = controlWifi[key].data
 		if (data.containsKey(wifiData.keySet()[0]))
@@ -1163,7 +1163,8 @@ def cleanupChildDevices() {
 def generateKeyAndCSR() {
 	logger("debug", "generateKeyAndCSR()")
 	httpGet([
-		uri: certGeneratorUrl
+		uri: certGeneratorUrl,
+		timeout: 60
 	]) {
 		resp ->
 			state.privateKey = resp.data.privKey
