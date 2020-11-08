@@ -324,10 +324,24 @@ def initialize() {
 				child.initialize()
 			}
 		}
+		if (deviceDetails.version == "thinq2") {
+			getDeviceSnapshot(deviceDetails, getChildDevice("thinq:"+deviceDetails.id))
+		}
 	}
 
 	if (hasV1Device)
 		schedule("0 */1 * * * ? *", refreshV1Devices)
+}
+
+def getDeviceSnapshot(devDetails, child) {
+	def data = lgAPIGet("${state.thinqUrl}/service/devices/${devDetails.id}")
+	if (data?.snapshot != null) {
+		def dataNode = findMQTTDataNode(devDetails.modelJson, data.snapshot)
+		def stateData = decodeMQTTMessage(devDetails.modelJson, dataNode)
+
+		if (stateData != null)
+			child.processStateData(stateData)
+	}
 }
 
 def getStandardHeaders() {
@@ -1046,14 +1060,16 @@ def processMqttMessage(dev, payload) {
 }
 
 def findMQTTDataNode(modelInfo, data) {
+	logger("debug", "findMQTTDataNode(${data})")
 	def controlWifi = modelInfo.ControlWifi
 	def key = controlWifi.keySet()[0]
-	if (controlWifi[key].containsKey("data")) {
+	if (modelInfo?.Config?.targetRoot != null) 
+		return data."${modelInfo?.Config?.targetRoot}"
+	else if (controlWifi[key].containsKey("data")) {
 		def wifiData = controlWifi[key].data
 		if (data.containsKey(wifiData.keySet()[0]))
 			return data."${wifiData.keySet()[0]}"
 	}
-	logger("debug", "findMQTTDataNode(${data})")
 	return data
 }
 

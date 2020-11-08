@@ -15,6 +15,12 @@ metadata {
     definition(name: "LG ThinQ Fridge", namespace: "dcm.thinq", author: "dmeglio@gmail.com") {
         capability "Sensor"
         capability "Initialize"
+        capability "ContactSensor"
+
+        attribute "fridgeTemp", "number"
+        attribute "freezerTemp", "number"
+        attribute "craftIceMode", "number"
+        attribute "icePlus", "string"
     }
 
     preferences {
@@ -73,7 +79,7 @@ def mqttConnectUntilSuccessful() {
 def parse(message) {
     def topic = interfaces.mqtt.parseMessage(message)
     def payload = new JsonSlurper().parseText(topic.payload)
-    logger("trace", "parse(${payload})")
+    logger("debug", "parse(${payload})")
 
     parent.processMqttMessage(this, payload)
 }
@@ -95,6 +101,45 @@ def mqttClientStatus(String message) {
 
 def processStateData(data) {
     logger("debug", "processStateData(${data})")
+
+    if (data.atLeastOneDoorOpen == "OPEN")
+      sendEvent(name: "contact", value: "open")
+    else if (data.atLeastOneDoorOpen == "CLOSE")
+      sendEvent(name: "contact", value: "closed")
+
+    if (data.fridgeTemp != null) {
+      def temp = data.fridgeTemp
+      if (getTemperatureScale() == "C")
+        temp = fahrenheitToCelsius(data.fridgeTemp)
+      sendEvent(name: "fridgeTemp", value: temp)
+    }
+
+    def freezerTemps = [5,4,3,2,1,0,-1,-2,-3,-4,-5,-6,-7]
+    def fridgeTemps = [43,42,41,40,39,38,37,36,35,34,33]
+    if (data.freezerTemp != null) {
+      def temp = freezerTemps[data.freezerTemp-1]
+      if (getTemperatureScale() == "C")
+        temp = fahrenheitToCelsius(temp)
+      sendEvent(name: "freezerTemp", value: temp)
+    }
+    log.debug getTemperatureScale()
+    if (data.fridgeTemp != null) {
+      def temp = fridgeTemps[data.fridgeTemp-1]
+      if (getTemperatureScale() == "C")
+        temp = fahrenheitToCelsius(temp)
+      sendEvent(name: "fridgeTemp", value: temp)
+    }
+
+    if (data.craftIceMode) {
+      if (data.craftIceMode == "@RE_TERM_CRAFT_6B_W")
+        sendEvent(name: "craftIceMode", value: 6)
+      else
+        sendEvent(name: "craftIceMode", value: 3)
+    }
+
+    if (data.expressMode) {
+      sendEvent(name: "icePlus", value: parent.cleanEnumValue(data.expressMode, "@CP_"))
+    }
 }
 
 /**
