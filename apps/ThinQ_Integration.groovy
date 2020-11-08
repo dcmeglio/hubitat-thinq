@@ -337,11 +337,32 @@ def getDeviceSnapshot(devDetails, child) {
 	def data = lgAPIGet("${state.thinqUrl}/service/devices/${devDetails.id}")
 	if (data?.snapshot != null) {
 		def dataNode = findMQTTDataNode(devDetails.modelJson, data.snapshot)
-		def stateData = decodeMQTTMessage(devDetails.modelJson, dataNode)
+		def targetKeys = getTargetKeys(devDetails.modelJson.MonitoringValue)
+		if (targetKeys != null) {
+			for (targetKey in targetKeys) {
+				if (dataNode."${targetKey}" != null)
+					child.updateDataValue(targetKey, dataNode."${targetKey}")
+			}
+		}
+		def stateData = decodeMQTTMessage(child, devDetails.modelJson, dataNode)
+
 
 		if (stateData != null)
 			child.processStateData(stateData)
 	}
+}
+
+def getTargetKeys(values) {
+	def targetKeys = []
+	for (key in values.keySet()) {
+		if (values[key].targetKey != null) {
+			def targetKey = values[key].targetKey.keySet()[0]
+			if (!targetKeys.find{ it == targetKey }) {
+				targetKeys << targetKey
+			}
+		}
+	}
+	return targetKeys
 }
 
 def getStandardHeaders() {
@@ -1027,7 +1048,7 @@ def retrieveMqttDetails() {
 	return [server: state.mqttServer, subscriptions: state.subscriptions, certificate: state.cert, privateKey: privKey, caCertificate: caCert, clientId: state.client_id]
 }
 
-def getParsedMqttValue(value, param, modelInfo) {
+def getParsedMqttValue(value, param, modelInfo, dev) {
 	logger("debug", "getParsedMqttValue(${value}, ${param}, modelInfo[FILTERED])")
 
 	if (param == null)
@@ -1037,6 +1058,12 @@ def getParsedMqttValue(value, param, modelInfo) {
 	case "enum":
 		return param.valueMapping?."$value"?.label ?: value
 	case "range":
+		if (param.targetKey != null) {
+			def key = param.targetKey.keySet()[0]
+			def keyValue = dev.getDataValue(key)
+			def lookupKey = param.targetKey."${key}"."${keyValue}"
+			return getParsedMqttValue((int)value, modelInfo.MonitoringValue."${lookupKey}", modelInfo, dev)
+		}
 		return value
 	case "ref":
 		def refField = param.ref
@@ -1080,7 +1107,14 @@ def processDeviceMonitoring(dev, payload) {
 		def deviceId = dev.deviceNetworkId.replace("thinq:", "")
 		modelInfo = state.foundDevices.find { it.id == deviceId }?.modelJson
 		def dataNode = findMQTTDataNode(modelInfo, payload?.data?.state?.reported)
-		def stateData = decodeMQTTMessage(modelInfo, dataNode)
+		def targetKeys = getTargetKeys(modelInfo.MonitoringValue)
+		if (targetKeys != null) {
+			for (targetKey in targetKeys) {
+				if (dataNode."${targetKey}" != null)
+					dev.updateDataValue(targetKey, dataNode."${targetKey}")
+			}
+		}
+		def stateData = decodeMQTTMessage(dev, modelInfo, dataNode)
 
 		if (stateData != null)
 			dev.processStateData(stateData)
@@ -1102,7 +1136,7 @@ def decodeMQTTValue(data, name) {
 		return decodeMQTTValue(data[namePart[0]],namePart[1..-1].join('.'))
 }
 
-def decodeMQTTMessage(modelInfo, data) {
+def decodeMQTTMessage(dev, modelInfo, data) {
 	def output = [:]
 
 	if (data == null)
@@ -1129,7 +1163,7 @@ def decodeMQTTMessage(modelInfo, data) {
 	else if (modelInfo.MonitoringValue != null) {
 		for (parameter in modelInfo.MonitoringValue.keySet()) {
 			if (data[parameter] != null) {
-				def parsedValue = getParsedMqttValue(data[parameter], modelInfo.MonitoringValue[parameter], modelInfo)
+				def parsedValue = getParsedMqttValue(data[parameter], modelInfo.MonitoringValue[parameter], modelInfo, dev)
 				output."${thinq2To1Mapping[parameter] ?: parameter}" = parsedValue
 			}
 		}

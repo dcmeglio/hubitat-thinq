@@ -116,18 +116,20 @@ def processStateData(data) {
       sendEvent(name: "fridgeTemp", value: temp)
     }
 
-    def freezerTemps = [5,4,3,2,1,0,-1,-2,-3,-4,-5,-6,-7]
-    def fridgeTemps = [43,42,41,40,39,38,37,36,35,34,33]
     if (data.freezerTemp != null) {
-      def temp = freezerTemps[(int)data.freezerTemp-1]
-      if (getTemperatureScale() == "C")
+      def temp = data.freezerTemp
+      if (getTemperatureScale() == "C" && device.getDataValue("tempUnit") == "FAHRENHEIT")
         temp = fahrenheitToCelsius(temp)
+      else if (getTemperatureScale() == "F" && device.getDataValue("tempUnit") == "CELSIUS")
+        temp = celsiusToFahrenheit(temp)
       sendEvent(name: "freezerTemp", value: temp)
     }
     if (data.fridgeTemp != null) {
-      def temp = fridgeTemps[(int)data.fridgeTemp-1]
-      if (getTemperatureScale() == "C")
+      def temp = data.fridgeTemp
+      if (getTemperatureScale() == "C" && device.getDataValue("tempUnit") == "FAHRENHEIT")
         temp = fahrenheitToCelsius(temp)
+      else if (getTemperatureScale() == "F" && device.getDataValue("tempUnit") == "CELSIUS")
+        temp = celsiusToFahrenheit(temp)
       sendEvent(name: "fridgeTemp", value: temp)
     }
 
