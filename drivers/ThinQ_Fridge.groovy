@@ -21,6 +21,8 @@ metadata {
         attribute "freezerTemp", "number"
         attribute "craftIceMode", "number"
         attribute "icePlus", "string"
+        attribute "waterFilterStatus", "string"
+        attribute "freshAirFilterStatus", "string"
     }
 
     preferences {
@@ -117,13 +119,13 @@ def processStateData(data) {
     def freezerTemps = [5,4,3,2,1,0,-1,-2,-3,-4,-5,-6,-7]
     def fridgeTemps = [43,42,41,40,39,38,37,36,35,34,33]
     if (data.freezerTemp != null) {
-      def temp = freezerTemps[data.freezerTemp-1]
+      def temp = freezerTemps[(int)data.freezerTemp-1]
       if (getTemperatureScale() == "C")
         temp = fahrenheitToCelsius(temp)
       sendEvent(name: "freezerTemp", value: temp)
     }
     if (data.fridgeTemp != null) {
-      def temp = fridgeTemps[data.fridgeTemp-1]
+      def temp = fridgeTemps[(int)data.fridgeTemp-1]
       if (getTemperatureScale() == "C")
         temp = fahrenheitToCelsius(temp)
       sendEvent(name: "fridgeTemp", value: temp)
@@ -138,6 +140,14 @@ def processStateData(data) {
 
     if (data.expressMode) {
       sendEvent(name: "icePlus", value: parent.cleanEnumValue(data.expressMode, "@CP_"))
+    }
+
+    if (data.waterFilter) {
+      sendEvent(name: "waterFilterStatus", value: parent.cleanEnumValue(parent.cleanEnumValue(data.waterFilter, "@RE_TERM_"),"@RE_STATE_"))
+    }
+
+    if (data.freshAirFilter) {
+      sendEvent(name: "freshAirFilterStatus", value: parent.cleanEnumValue(parent.cleanEnumValue(data.freshAirFilter, "@RE_FILTER_STATE_"),"@RE_STATE_"))
     }
 }
 
