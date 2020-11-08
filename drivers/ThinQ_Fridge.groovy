@@ -122,7 +122,6 @@ def processStateData(data) {
         temp = fahrenheitToCelsius(temp)
       sendEvent(name: "freezerTemp", value: temp)
     }
-    log.debug getTemperatureScale()
     if (data.fridgeTemp != null) {
       def temp = fridgeTemps[data.fridgeTemp-1]
       if (getTemperatureScale() == "C")
