@@ -354,7 +354,7 @@ def getDeviceSnapshot(devDetails, child) {
 
 def getTargetKeys(values) {
 	def targetKeys = []
-	for (key in values.keySet()) {
+	for (key in values?.keySet()) {
 		if (values[key].targetKey != null) {
 			def targetKey = values[key].targetKey.keySet()[0]
 			if (!targetKeys.find{ it == targetKey }) {
@@ -1097,6 +1097,11 @@ def findMQTTDataNode(modelInfo, data) {
 		if (data.containsKey(wifiData.keySet()[0]))
 			return data."${wifiData.keySet()[0]}"
 	}
+	else if (controlWifi[key].containsKey("dataForm")) {
+		def wifiData = controlWifi[key].dataForm
+		if (data.containsKey(wifiData.keySet()[0]))
+			return data."${wifiData.keySet()[0]}"
+	}
 	return data
 }
 
@@ -1147,9 +1152,17 @@ def decodeMQTTMessage(dev, modelInfo, data) {
 		def protocol = modelInfo.Monitoring.protocol
 		def values = modelInfo.Value
 		for (parameter in protocol) {
-			def mqttName = parameter.superSet
-			def name = parameter.value
-
+			def mqttName = ""
+			def name = ""
+			try
+			{
+				mqttName = parameter.superSet
+				name = parameter.value
+			}
+			catch (e)
+			{
+				mqttName = name = parameter.value
+			}
 			def value = decodeMQTTValue(data,mqttName)
 
 			if (value != null) {
