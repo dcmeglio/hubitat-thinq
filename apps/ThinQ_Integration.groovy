@@ -854,6 +854,10 @@ private checkValue(data, String k) {
   } else { return false }
 }
 
+private convertSecondsToTime(BigDecimal sec) {
+	convertSecondsToTime(sec.intValue())
+}
+
 // Converts seconds to time hh:mm:ss
 private convertSecondsToTime(int sec) {
   long millis = sec * 1000
