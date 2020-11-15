@@ -346,7 +346,6 @@ def getDeviceSnapshot(devDetails, child) {
 		}
 		def stateData = decodeMQTTMessage(child, devDetails.modelJson, dataNode)
 
-
 		if (stateData != null)
 			child.processStateData(stateData)
 	}
@@ -1161,7 +1160,8 @@ def decodeMQTTMessage(dev, modelInfo, data) {
 			}
 			catch (e)
 			{
-				mqttName = name = parameter.value
+				mqttName = parameter.key
+				name = parameter.value
 			}
 			def value = decodeMQTTValue(data,mqttName)
 
