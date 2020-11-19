@@ -401,7 +401,8 @@ def getModelJson(url) {
 	{
 		httpGet(
 			[
-				uri: url
+				uri: url,
+				ignoreSSLIssues: true
 			]
 		) {
 			resp ->
@@ -437,7 +438,8 @@ def lgAPIGet(uri) {
 			[
 				uri: uri,
 				headers: getStandardHeaders(),
-				requestContentType: "application/json"
+				requestContentType: "application/json",
+				ignoreSSLIssues: true
 			]
 		) {
 			resp ->
@@ -487,7 +489,8 @@ def lgAPIPost(uri, body) {
 				uri: uri,
 				headers: headers,
 				requestContentType: "application/json",
-				body: body
+				body: body,
+				ignoreSSLIssues: true
 			]
 		) {
 			resp ->
@@ -551,7 +554,8 @@ def getMqttServer() {
 				headers: [
 					"x-country-code": state.countryCode,
 					"x-service-phase": "OP"
-				]
+				],
+				ignoreSSLIssues: true
 			]
 		) { resp ->
 			if (resp.data.resultCode == "0000")
@@ -618,7 +622,8 @@ def getAccessToken(body) {
 				"x-lge-appkey": "LGAO221A02",
 				"x-lge-oauth-date": getTimestamp()
 			],
-			body: body
+			body: body,
+			ignoreSSLIssues: true
 		]) { resp ->
 			result = resp.data
 			logger("trace", "getAccessToken(${body}) - ${result}")
@@ -684,6 +689,7 @@ def lgEdmPost(url, body, refresh = true) {
 			body: [
 				lgedmRoot: body
 			],
+			ignoreSSLIssues: true
 		]) { resp ->
 			logger("trace", "lgEdmPost(${url}) - ${resp?.data}")
 
@@ -1039,7 +1045,8 @@ def retrieveMqttDetails() {
 	def caCert = ""
 	httpGet([
 		uri: caCertUrl,
-		textParser: true
+		textParser: true,
+		ignoreSSLIssues: true
 	]) {
 		resp ->
 			caCert = resp.data.text
