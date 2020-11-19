@@ -15,6 +15,14 @@ metadata {
     definition(name: "LG ThinQ Fridge", namespace: "dcm.thinq", author: "dmeglio@gmail.com") {
         capability "Sensor"
         capability "Initialize"
+        capability "ContactSensor"
+
+        attribute "fridgeTemp", "number"
+        attribute "freezerTemp", "number"
+        attribute "craftIceMode", "number"
+        attribute "icePlus", "string"
+        attribute "waterFilterStatus", "string"
+        attribute "freshAirFilterStatus", "string"
     }
 
     preferences {
@@ -73,7 +81,7 @@ def mqttConnectUntilSuccessful() {
 def parse(message) {
     def topic = interfaces.mqtt.parseMessage(message)
     def payload = new JsonSlurper().parseText(topic.payload)
-    logger("trace", "parse(${payload})")
+    logger("debug", "parse(${payload})")
 
     parent.processMqttMessage(this, payload)
 }
@@ -95,6 +103,54 @@ def mqttClientStatus(String message) {
 
 def processStateData(data) {
     logger("debug", "processStateData(${data})")
+
+    if (data.atLeastOneDoorOpen == "OPEN")
+      sendEvent(name: "contact", value: "open")
+    else if (data.atLeastOneDoorOpen == "CLOSE")
+      sendEvent(name: "contact", value: "closed")
+
+    if (data.fridgeTemp != null) {
+      def temp = data.fridgeTemp
+      if (getTemperatureScale() == "C")
+        temp = fahrenheitToCelsius(data.fridgeTemp)
+      sendEvent(name: "fridgeTemp", value: temp)
+    }
+
+    if (data.freezerTemp != null) {
+      def temp = data.freezerTemp
+      if (getTemperatureScale() == "C" && device.getDataValue("tempUnit") == "FAHRENHEIT")
+        temp = fahrenheitToCelsius(temp)
+      else if (getTemperatureScale() == "F" && device.getDataValue("tempUnit") == "CELSIUS")
+        temp = celsiusToFahrenheit(temp)
+      sendEvent(name: "freezerTemp", value: temp)
+    }
+    if (data.fridgeTemp != null) {
+      def temp = data.fridgeTemp
+      if (getTemperatureScale() == "C" && device.getDataValue("tempUnit") == "FAHRENHEIT")
+        temp = fahrenheitToCelsius(temp)
+      else if (getTemperatureScale() == "F" && device.getDataValue("tempUnit") == "CELSIUS")
+        temp = celsiusToFahrenheit(temp)
+      sendEvent(name: "fridgeTemp", value: temp)
+    }
+
+    if (data.craftIceMode) {
+      if (data.craftIceMode == "@RE_TERM_CRAFT_6B_W")
+        sendEvent(name: "craftIceMode", value: 6)
+      else
+        sendEvent(name: "craftIceMode", value: 3)
+    }
+
+    if (data.expressMode) {
+      sendEvent(name: "icePlus", value: parent.cleanEnumValue(data.expressMode, "@CP_"))
+    }
+
+    if (data.waterFilter) {
+      sendEvent(name: "waterFilterStatus", value: parent.cleanEnumValue(parent.cleanEnumValue(data.waterFilter, "@RE_TERM_"),"@RE_STATE_"))
+    }
+
+    if (data.freshAirFilter) {
+      sendEvent(name: "freshAirFilterStatus", value: parent.cleanEnumValue(parent.cleanEnumValue(data.freshAirFilter, "@RE_FILTER_STATE_"),"@RE_STATE_"))
+    }
 }
 
 /**
