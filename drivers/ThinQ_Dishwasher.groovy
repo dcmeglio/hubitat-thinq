@@ -15,6 +15,7 @@ metadata {
     definition(name: "LG ThinQ Dishwasher", namespace: "dcm.thinq", author: "dmeglio@gmail.com") {
         capability "Sensor"
         capability "Switch"
+        capability "ContactSensor"
         capability "Initialize"
 
         attribute "runTime", "number"
@@ -28,6 +29,12 @@ metadata {
         attribute "error", "string"
         attribute "course", "string"
         attribute "smartCourse", "string"
+        attribute "steam", "string"
+        attribute "highTemp", "string"
+        attribute "extraDry", "string"
+        attribute "halfLoad", "string"
+        attribute "dualZone", "string"
+        attribute "nightDry", "string"
     }
 
     preferences {
@@ -118,6 +125,11 @@ def processStateData(data) {
     def delayTimeDisplay = '00:00:00'
     def error
 
+    if (data.Door == "@CP_ON_EN_W")
+      sendEvent(name: "contact", value: "open")
+    else if (data.Door == "@CP_OFF_EN_W")
+      sendEvent(name: "contact", value: "closed")
+
     if (parent.checkValue(data,'Initial_Time_H')) {
       runTime += (data["Initial_Time_H"]*60*60)
     }
@@ -189,6 +201,19 @@ def processStateData(data) {
     }
     if (parent.checkValue(data,'SmartCourse'))
         sendEvent(name: "smartCourse", value: data["SmartCourse"] != 0 ? data["SmartCourse"]?.toLowerCase() : "none")
+
+    if (parent.checkValue(data,'Steam')) 
+      sendEvent(name: "steam", value:  parent.cleanEnumValue(data["Steam"], "@CP_"))
+    if (parent.checkValue(data,'HighTemp')) 
+      sendEvent(name: "highTemp", value:  parent.cleanEnumValue(data["HighTemp"], "@CP_"))
+    if (parent.checkValue(data,'ExtraDry')) 
+      sendEvent(name: "extraDry", value:  parent.cleanEnumValue(data["ExtraDry"], "@CP_"))
+    if (parent.checkValue(data,'HalfLoad')) 
+      sendEvent(name: "halfLoad", value:  parent.cleanEnumValue(parent.cleanEnumValue(data["ExtraDry"], "@CP_"),"@DW_OPTION_"))
+    if (parent.checkValue(data,'DualZone')) 
+      sendEvent(name: "dualZone", value:  parent.cleanEnumValue(data["DualZone"], "@CP_"))          
+    if (parent.checkValue(data,'NightDry')) 
+      sendEvent(name: "nightDry", value:  parent.cleanEnumValue(data["NightDry"], "@CP_"))   
 }
 
 /**

@@ -1125,7 +1125,7 @@ def processDeviceMonitoring(dev, payload) {
 		def targetKeys = getTargetKeys(modelInfo.MonitoringValue)
 		if (targetKeys != null) {
 			for (targetKey in targetKeys) {
-				if (dataNode."${targetKey}" != null)
+				if (dataNode != null && dataNode."${targetKey}" != null)
 					dev.updateDataValue(targetKey, dataNode."${targetKey}")
 			}
 		}
