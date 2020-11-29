@@ -23,6 +23,7 @@ metadata {
         attribute "centerState", "string"
         attribute "ovenState", "string"
         attribute "lowerOvenState", "string"
+        attribute "ovenTemperature", number
     }
 
     preferences {
@@ -112,6 +113,8 @@ def processStateData(data) {
     def rearLeftState = data["LRState"]
     def rearRightState = data["RRState"]
     def centerState = data["CenterState"]
+    def upperOvenState = data["UpperOvenState"]
+    def lowerOvenState = data["LowerOvenState"]
 
     def frontRight = parent.cleanEnumValue(rightFrontState, "@OV_STATE_")
     if (frontRight == "initial")
@@ -128,6 +131,12 @@ def processStateData(data) {
     def center = parent.cleanEnumValue(centerState, "@OV_STATE_")
     if (center == "initial")
         center = "power off"
+
+    if (upperOvenState == "initial")
+        upperOvenState = "power off"
+    if (lowerOvenState == "initial")
+        lowerOvenState = "power off"
+
     if (frontRight != null && frontRight != "")
         sendEvent(name: "frontRightState", value: frontRight)
     if (frontLeft != null && frontLeft != "")
@@ -139,11 +148,13 @@ def processStateData(data) {
     if (center != null && center != "")
         sendEvent(name: "centerState", value: center)
 
-    if (data["UpperOvenState"] != null)
-        sendEvent(name: "ovenState", value: parent.cleanEnumValue(data["UpperOvenState"], "@OV_STATE_") ?: "power off")
+    if (upperOvenState != null)
+        sendEvent(name: "ovenState", value: parent.cleanEnumValue(upperOvenState, "@OV_STATE_") ?: "power off")
+
+    sendEvent(name: "ovenTemperature", value: "")
     // The API has a typo in it that causes this weird value
-    if (data["LowerOvenState"] != "NOT_DEFINE_VALUE" && data["LowerOvenState"] != "NOT_DEFINE_VALUE value:7" && data["LowerOvenState"] != null) {
-        sendEvent(name: "lowerOvenState", value: parent.cleanEnumValue(data["LowerOvenState"], "@OV_STATE_") ?: "power off")
+    if (lowerOvenState != "NOT_DEFINE_VALUE" && lowerOvenState != "NOT_DEFINE_VALUE value:7" && lowerOvenState != null) {
+        sendEvent(name: "lowerOvenState", value: parent.cleanEnumValue(lowerOvenState, "@OV_STATE_") ?: "power off")
     }
 }
 
