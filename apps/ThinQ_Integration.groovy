@@ -921,10 +921,12 @@ def registerRTIMonitoring(dev) {
 			"workId": UUID.randomUUID().toString()
 		])
 		if (resultData?.returnCd == "0000") {
+			log.info "Successfully connected to RTI: ${resultData}"
 			dev.updateDataValue("workId", resultData.workId)
 			return resultData.workId
 		}
 		else {
+			log.error "Failed connecting to RTI: ${resultData}"
 			dev.removeDataValue("workId")
 			return null
 		}
@@ -948,7 +950,7 @@ def stopRTIMonitoring(dev) {
 }
 
 def getRTIData(workList) {
-	logger("debug", "getRTIData(${workList})")
+	logger("info", "getRTIData(${workList})")
 
 	def result = [:]
 	def resultData = lgEdmPost("${state.thinq1Url}/rti/rtiResult", [
@@ -956,8 +958,10 @@ def getRTIData(workList) {
 	])
 
 	// No data available (yet)
-	if (resultData?.returnCd == null)
+	if (resultData?.returnCd == null) {
+		logger("info", "getRTIData(${workList}) - no returnCd")
 		return result
+	}
 	else if (resultData.returnCd != "0000") {
 		logger("error", "getRTIData(${workList}) - RTI Data: ${responseCodeText[resultData.returnCd]}")
 	}
@@ -966,7 +970,7 @@ def getRTIData(workList) {
 		if (workList.size() == 1)
 			resultWorkList = [resultData.workList]
 		for (workItem in resultWorkList) {
-			logger("debug", "getRTIData(${workList}) - RTI Data: ${workItem}")
+			logger("info", "getRTIData(${workList}) - RTI Data: ${workItem}")
 			def deviceId = workItem.deviceId
 			def returnCode = workItem.returnCode
 			def format = workItem.format
