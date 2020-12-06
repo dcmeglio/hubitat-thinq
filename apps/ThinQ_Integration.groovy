@@ -921,12 +921,10 @@ def registerRTIMonitoring(dev) {
 			"workId": UUID.randomUUID().toString()
 		])
 		if (resultData?.returnCd == "0000") {
-			log.info "Successfully connected to RTI: ${resultData}"
 			dev.updateDataValue("workId", resultData.workId)
 			return resultData.workId
 		}
 		else {
-			log.error "Failed connecting to RTI: ${resultData}"
 			dev.removeDataValue("workId")
 			return null
 		}
