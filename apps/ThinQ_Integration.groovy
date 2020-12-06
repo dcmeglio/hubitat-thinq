@@ -313,19 +313,23 @@ def initialize() {
 		}
 		if (!hasV1Device)
 			hasV1Device = deviceDetails.version == "thinq1"
-		if (!getChildDevice("thinq:"+deviceDetails.id)) {
-			def child = addChildDevice("dcm.thinq", driverName, "thinq:" + deviceDetails.id, 1234, ["name": deviceDetails.name,isComponent: false])
+		def childDevice = getChildDevice("thinq:"+deviceDetails.id)
+		if (childDevice == null) {
+			childDevice = addChildDevice("dcm.thinq", driverName, "thinq:" + deviceDetails.id, 1234, ["name": deviceDetails.name,isComponent: false])
 			if (!findMasterDevice() && deviceDetails.version == "thinq2") {
-				child.updateDataValue("master", "true")
-				child.initialize()
+				childDevice.updateDataValue("master", "true")
+				childDevice.initialize()
 			}
-			else if (child.getDataValue("master") != "true") {
-				child.updateDataValue("master", "false")
-				child.initialize()
+			else if (childDevice.getDataValue("master") != "true") {
+				childDevice.updateDataValue("master", "false")
 			}
 		}
+		
+		if (deviceDetails.version == "thinq1") {
+			childDevice.initialize()
+		}
 		if (deviceDetails.version == "thinq2") {
-			getDeviceSnapshot(deviceDetails, getChildDevice("thinq:"+deviceDetails.id))
+			getDeviceSnapshot(deviceDetails, childDevice)
 		}
 	}
 
