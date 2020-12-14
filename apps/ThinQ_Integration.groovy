@@ -313,19 +313,23 @@ def initialize() {
 		}
 		if (!hasV1Device)
 			hasV1Device = deviceDetails.version == "thinq1"
-		if (!getChildDevice("thinq:"+deviceDetails.id)) {
-			def child = addChildDevice("dcm.thinq", driverName, "thinq:" + deviceDetails.id, 1234, ["name": deviceDetails.name,isComponent: false])
+		def childDevice = getChildDevice("thinq:"+deviceDetails.id)
+		if (childDevice == null) {
+			childDevice = addChildDevice("dcm.thinq", driverName, "thinq:" + deviceDetails.id, 1234, ["name": deviceDetails.name,isComponent: false])
 			if (!findMasterDevice() && deviceDetails.version == "thinq2") {
-				child.updateDataValue("master", "true")
-				child.initialize()
+				childDevice.updateDataValue("master", "true")
+				childDevice.initialize()
 			}
-			else if (child.getDataValue("master") != "true") {
-				child.updateDataValue("master", "false")
-				child.initialize()
+			else if (childDevice.getDataValue("master") != "true") {
+				childDevice.updateDataValue("master", "false")
 			}
 		}
+		
+		if (deviceDetails.version == "thinq1") {
+			childDevice.initialize()
+		}
 		if (deviceDetails.version == "thinq2") {
-			getDeviceSnapshot(deviceDetails, getChildDevice("thinq:"+deviceDetails.id))
+			getDeviceSnapshot(deviceDetails, childDevice)
 		}
 	}
 
@@ -714,6 +718,7 @@ def lgEdmPost(url, body, refresh = true) {
 			}
 			else {
 				logger("error", "lgEdmPost(${url}, ${body}, ${refresh}) - ${responseCodeText[resp.data?.lgedmRoot.returnCd]}")
+				return null
 			}
 		}
 	}
@@ -916,11 +921,15 @@ def registerRTIMonitoring(dev) {
 			"workId": UUID.randomUUID().toString()
 		])
 		if (resultData?.returnCd == "0000") {
+			log.info "Successfully connected to RTI: ${resultData}"
 			dev.updateDataValue("workId", resultData.workId)
 			return resultData.workId
 		}
-		else
+		else {
+			log.error "Failed connecting to RTI: ${resultData}"
+			dev.removeDataValue("workId")
 			return null
+		}
 	}
 	return null
 }
@@ -941,7 +950,7 @@ def stopRTIMonitoring(dev) {
 }
 
 def getRTIData(workList) {
-	logger("debug", "getRTIData(${workList})")
+	logger("info", "getRTIData(${workList})")
 
 	def result = [:]
 	def resultData = lgEdmPost("${state.thinq1Url}/rti/rtiResult", [
@@ -949,8 +958,10 @@ def getRTIData(workList) {
 	])
 
 	// No data available (yet)
-	if (resultData?.returnCd == null)
+	if (resultData?.returnCd == null) {
+		logger("info", "getRTIData(${workList}) - no returnCd")
 		return result
+	}
 	else if (resultData.returnCd != "0000") {
 		logger("error", "getRTIData(${workList}) - RTI Data: ${responseCodeText[resultData.returnCd]}")
 	}
@@ -959,7 +970,7 @@ def getRTIData(workList) {
 		if (workList.size() == 1)
 			resultWorkList = [resultData.workList]
 		for (workItem in resultWorkList) {
-			logger("debug", "getRTIData(${workList}) - RTI Data: ${workItem}")
+			logger("info", "getRTIData(${workList}) - RTI Data: ${workItem}")
 			def deviceId = workItem.deviceId
 			def returnCode = workItem.returnCode
 			def format = workItem.format
@@ -1025,10 +1036,14 @@ def refreshV1Devices() {
 	def workList = []
 	for (dev in getChildDevices()) {
 		def thinqDeviceId = dev?.deviceNetworkId?.replace("thinq:", "")
-		if (getDeviceThinQVersion(dev) == "thinq1" && dev.getDataValue("workId") != null) {
-			workList << ["deviceId": thinqDeviceId, "workId": dev.getDataValue("workId")]
+		if (getDeviceThinQVersion(dev) == "thinq1") {
+		 	if (dev.getDataValue("workId") == null)
+				registerRTIMonitoring(dev)
+			if (dev.getDataValue("workId") != null)
+				workList << ["deviceId": thinqDeviceId, "workId": dev.getDataValue("workId")]
 		}
 	}
+	
 	if (workList.size() > 0) {
 		def rtiData = getRTIData(workList)
 		for (deviceId in rtiData.keySet()) {
