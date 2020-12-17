@@ -112,11 +112,11 @@ def processStateData(data) {
     logger("debug", "processStateData(${data})")
 
     def runTime = 0
-    def runTimeDisplay = '00:00:00'
+    def runTimeDisplay = '00:00'
     def remainingTime = 0
-    def remainingTimeDisplay = '00:00:00'
+    def remainingTimeDisplay = '00:00'
     def delayTime = 0
-    def delayTimeDisplay = '00:00:00'
+    def delayTimeDisplay = '00:00'
     def error
 
     if (parent.checkValue(data,'Initial_Time_H')) {
@@ -172,12 +172,12 @@ def processStateData(data) {
     }
 
     sendEvent(name: "runTime", value: runTime, unit: "seconds")
-    sendEvent(name: "runTimeDisplay", value: runTimeDisplay, unit: "hh:mm:ss")
+    sendEvent(name: "runTimeDisplay", value: runTimeDisplay, unit: "hh:mm")
     sendEvent(name: "remainingTime", value: remainingTime, unit: "seconds")
-    sendEvent(name: "remainingTimeDisplay", value: remainingTimeDisplay, unit: "hh:mm:ss")
+    sendEvent(name: "remainingTimeDisplay", value: remainingTimeDisplay, unit: "hh:mm")
     sendEvent(name: "delayTime", value: delayTime, unit: "seconds")
-    sendEvent(name: "delayTimeDisplay", value: delayTimeDisplay, unit: "hh:mm:ss")
-    sendEvent(name: "finishTimeDisplay", value: finishTimeDisplay, unit: "hh:mm:ss")
+    sendEvent(name: "delayTimeDisplay", value: delayTimeDisplay, unit: "hh:mm")
+    sendEvent(name: "finishTimeDisplay", value: finishTimeDisplay, unit: "hh:mm")
 
     if (parent.checkValue(data,'Error')) {
       sendEvent(name: "error", value: data["Error"].toLowerCase())

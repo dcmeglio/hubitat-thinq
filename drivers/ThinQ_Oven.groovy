@@ -23,7 +23,7 @@ metadata {
         attribute "centerState", "string"
         attribute "ovenState", "string"
         attribute "lowerOvenState", "string"
-        attribute "ovenTemperature", number
+        attribute "ovenTemperature", "number"
     }
 
     preferences {
@@ -113,8 +113,8 @@ def processStateData(data) {
     def rearLeftState = data["LRState"]
     def rearRightState = data["RRState"]
     def centerState = data["CenterState"]
-    def upperOvenState = data["UpperOvenState"]
-    def lowerOvenState = data["LowerOvenState"]
+    def upperOvenState = parent.cleanEnumValue(data["UpperOvenState"], "@OV_STATE_")
+    def lowerOvenState = parent.cleanEnumValue(data["LowerOvenState"], "@OV_STATE_")
 
     def frontRight = parent.cleanEnumValue(rightFrontState, "@OV_STATE_")
     if (frontRight == "initial")
@@ -149,12 +149,12 @@ def processStateData(data) {
         sendEvent(name: "centerState", value: center)
 
     if (upperOvenState != null)
-        sendEvent(name: "ovenState", value: parent.cleanEnumValue(upperOvenState, "@OV_STATE_") ?: "power off")
+        sendEvent(name: "ovenState", value: upperOvenState ?: "power off")
 
     sendEvent(name: "ovenTemperature", value: "")
     // The API has a typo in it that causes this weird value
     if (lowerOvenState != "NOT_DEFINE_VALUE" && lowerOvenState != "NOT_DEFINE_VALUE value:7" && lowerOvenState != null) {
-        sendEvent(name: "lowerOvenState", value: parent.cleanEnumValue(lowerOvenState, "@OV_STATE_") ?: "power off")
+        sendEvent(name: "lowerOvenState", value: lowerOvenState ?: "power off")
     }
 }
 

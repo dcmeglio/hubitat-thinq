@@ -118,11 +118,11 @@ def processStateData(data) {
     logger("debug", "processStateData(${data})")
 
     def runTime = 0
-    def runTimeDisplay = '00:00:00'
+    def runTimeDisplay = '00:00'
     def remainingTime = 0
-    def remainingTimeDisplay = '00:00:00'
+    def remainingTimeDisplay = '00:00'
     def delayTime = 0
-    def delayTimeDisplay = '00:00:00'
+    def delayTimeDisplay = '00:00'
     def error
 
     if (data.Door == "@CP_ON_EN_W")
@@ -132,6 +132,10 @@ def processStateData(data) {
 
     if (parent.checkValue(data,'Initial_Time_H')) {
       runTime += (data["Initial_Time_H"]*60*60)
+      updateDataValue("initialHours", data["Initial_Time_H"].toString())
+    }
+    else {
+      runTime += (getDataValue("initialHours") ?: "0").toInteger()*60*60
     }
     if (parent.checkValue(data,'Initial_Time_M')) {
       runTime += (data["Initial_Time_M"]*60)
@@ -140,10 +144,15 @@ def processStateData(data) {
 
     if (parent.checkValue(data,'Remain_Time_H')) {
       remainingTime += (data["Remain_Time_H"]*60*60)
+      updateDataValue("remainHours", data["Remain_Time_H"].toString())
+    }
+    else {
+      remainingTime += (getDataValue("remainHours") ?: "0").toInteger()*60*60
     }
     if (parent.checkValue(data,'Remain_Time_M')) {
       remainingTime += (data["Remain_Time_M"]*60)
     }
+ 
     remainingTimeDisplay = parent.convertSecondsToTime(remainingTime)
 
     Date currentTime = new Date()
@@ -154,6 +163,10 @@ def processStateData(data) {
 
     if (parent.checkValue(data,'Reserve_Time_H')) {
       delayTime += (data["Reserve_Time_H"]*60*60)
+      updateDataValue("reserveHours", data["Reserve_Time_H"].toString())
+    }
+    else {
+      delayTime += (getDataValue("reserveHours") ?: "0").toInteger()*60*60
     }
     if (parent.checkValue(data,'Reserve_Time_M')) {
       delayTime += (data["Reserve_Time_M"]*60)
@@ -183,12 +196,12 @@ def processStateData(data) {
     }
 
     sendEvent(name: "runTime", value: runTime, unit: "seconds")
-    sendEvent(name: "runTimeDisplay", value: runTimeDisplay, unit: "hh:mm:ss")
+    sendEvent(name: "runTimeDisplay", value: runTimeDisplay, unit: "hh:mm")
     sendEvent(name: "remainingTime", value: remainingTime, unit: "seconds")
-    sendEvent(name: "remainingTimeDisplay", value: remainingTimeDisplay, unit: "hh:mm:ss")
+    sendEvent(name: "remainingTimeDisplay", value: remainingTimeDisplay, unit: "hh:mm")
     sendEvent(name: "delayTime", value: delayTime, unit: "seconds")
-    sendEvent(name: "delayTimeDisplay", value: delayTimeDisplay, unit: "hh:mm:ss")
-    sendEvent(name: "finishTimeDisplay", value: finishTimeDisplay, unit: "hh:mm:ss")
+    sendEvent(name: "delayTimeDisplay", value: delayTimeDisplay, unit: "hh:mm")
+    sendEvent(name: "finishTimeDisplay", value: finishTimeDisplay, unit: "hh:mm")
 
     if (parent.checkValue(data,'Error')) {
       sendEvent(name: "error", value: data["Error"].toLowerCase())
