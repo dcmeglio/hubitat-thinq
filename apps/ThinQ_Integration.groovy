@@ -150,7 +150,7 @@ preferences {
 ]
 
 @Field static def thinq2ToV1DataValues = [
-	"TempUnit"
+	"TempUnit": "tempUnit"
 ]
 
 def prefMain() {
@@ -1002,7 +1002,7 @@ def getRTIData(workList) {
 							// Check through the output to find any data values that need capturing.
 							for (dataVal in result[deviceId].keySet()) {
 								if (thinq2ToV1DataValues[dataVal] != null) 
-									dev.updateDataValue(dataVal, result[deviceId][dataVal])
+									dev.updateDataValue(thinq2ToV1DataValues[dataVal], result[deviceId][dataVal])
 							}
 						}
 						else if (modelInfo?.Monitoring?.type == "THINQ2") {
