@@ -150,7 +150,12 @@ preferences {
 ]
 
 @Field static def thinq2ToV1DataValues = [
-	"TempUnit": [ dataValueKey: "tempUnit", dataValueMappings: ["˚F": "FAHRENHEIT", "˚C": "CELSIUS"], associatedAttributes: ["TempRefrigerator", "TempFreezer"] ]
+	"TempUnit": [ dataValueKey: "tempUnit", 
+		dataValueMappings: ["˚F": "FAHRENHEIT", "˚C": "CELSIUS"], 
+		associatedAttributes: ["TempRefrigerator", "TempFreezer"],
+		TempRefrigerator: ["˚F": "TempRefrigerator_F", "˚C": "TempRefrigerator_C"],
+		TempFreezer: ["˚F": "TempFreezer_F", "˚C": "TempFreezer_C"]
+	]
 ]
 
 def prefMain() {
@@ -1057,13 +1062,15 @@ def decodeBinaryRTIMessage(protocol, modelInfo, data, returnCode) {
 	// Find any data value "target keys" and we will use this to find out the temperature
 	for (def dataVal in output.keySet()) {
 		def targetKey = thinq2ToV1DataValues[dataVal]
+		def targetKeyValue = output[dataVal]
 		if (targetKey != null) {
 			log.info "Found ${dataVal}"
 			// Find the associated attributes
 			for (def attribute in output.keySet()) {
 				def associatedKey = targetKey.associatedAttributes.find {it == attribute}
 				if (associatedKey != null) {
-					log.info "Found ${associatedKey} for ${dataVal}"
+					def newKey = targetKey."${associatedKey}".$"{targetKeyValue}"
+					log.info "Found ${associatedKey} for ${dataVal} -> ${newKey}"
 				}
 			}
 		}
