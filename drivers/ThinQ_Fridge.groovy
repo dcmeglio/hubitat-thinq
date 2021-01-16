@@ -142,7 +142,11 @@ def processStateData(data) {
     }
 
     if (data.FreshAirFilter) {
-      sendEvent(name: "freshAirFilterStatus", value: parent.cleanEnumValue(parent.cleanEnumValue(parent.cleanEnumValue(data.FreshAirFilter, "@RE_STATE_FRESH_AIR_FILTER_MODE_"),"@RE_STATE_")),"@RE_FILTER_STATE_")
+      sendEvent(name: "freshAirFilterStatus", value: 
+        parent.cleanEnumValue(
+          parent.cleanEnumValue(
+            parent.cleanEnumValue(data.FreshAirFilter, "@RE_STATE_FRESH_AIR_FILTER_MODE_")
+            ,"@RE_STATE_"),"@RE_FILTER_STATE_"))
     }
 }
 

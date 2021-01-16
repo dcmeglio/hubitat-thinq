@@ -1054,6 +1054,16 @@ def decodeBinaryRTIMessage(protocol, modelInfo, data, returnCode) {
 
 	// Find any data value "target keys" and we will use this to find out the temperature
 	for (def dataVal in output.keySet()) {
+		def targetKey = thinq2ToV1DataValues[dataVal]
+		if (targetKey != null) {
+			// Find the associated attributes
+			for (def attribute in output.keySet()) {
+				def associatedKey = targetKey.associatedAttributes.find {it == attribute})
+				if (associatedKey != null) {
+					log.info "Found ${associatedKey} for ${dataVal}"
+				}
+			}
+		}
 
 	}
 	return output
