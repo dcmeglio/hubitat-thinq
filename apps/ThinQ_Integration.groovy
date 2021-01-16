@@ -150,7 +150,7 @@ preferences {
 ]
 
 @Field static def thinq2ToV1DataValues = [
-	"TempUnit": "tempUnit"
+	"TempUnit": [ dataValueKey: "tempUnit", associatedAttributes: ["TempRefrigerator", "TempFreezer"] ]
 ]
 
 def prefMain() {
@@ -1002,7 +1002,7 @@ def getRTIData(workList) {
 							// Check through the output to find any data values that need capturing.
 							for (dataVal in result[deviceId].keySet()) {
 								if (thinq2ToV1DataValues[dataVal] != null) 
-									dev.updateDataValue(thinq2ToV1DataValues[dataVal], result[deviceId][dataVal])
+									dev.updateDataValue(thinq2ToV1DataValues[dataVal].dataValueKey, result[deviceId][dataVal])
 							}
 						}
 						else if (modelInfo?.Monitoring?.type == "THINQ2") {
@@ -1052,6 +1052,10 @@ def decodeBinaryRTIMessage(protocol, modelInfo, data, returnCode) {
 	if (returnCode == "0106")
 		output.State = "@WM_STATE_POWER_OFF_W"
 
+	// Find any data value "target keys" and we will use this to find out the temperature
+	for (def dataVal in output.keySet()) {
+
+	}
 	return output
 }
 
