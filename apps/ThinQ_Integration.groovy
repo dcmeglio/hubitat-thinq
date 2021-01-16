@@ -799,8 +799,8 @@ def getDeviceThinQVersion(dev) {
 }
 
 // Common device state processing methods
-def getParsedValue(name, value, param, modelInfo) {
-	logger("debug", "getParsedValue(${name}, ${value}, ${param}, modelInfo[FILTERED])")
+def getParsedValue(value, param, modelInfo) {
+	logger("debug", "getParsedValue(${value}, ${param}, modelInfo[FILTERED])")
 
 	if (param == null)
 		return value
@@ -831,12 +831,6 @@ def getParsedValue(name, value, param, modelInfo) {
 			return value
 		case "enum":
 			def enumValue = param?.option[value.toString()] ?: param?.option[value] ?: value
-			if (name.startsWith("Temp")) {
-				log.info "Found ${name}"
-				if (getValueDefinition("${name}_F", modelInfo.Value) != null) {
-
-				}
-			}
 			return enumValue
 		case "reference":
 			def refField = param.option[0]
@@ -1051,7 +1045,7 @@ def decodeBinaryRTIMessage(protocol, modelInfo, data, returnCode) {
 			}
 
 			def paramDefinition = getValueDefinition(name, values)
-			def parsedValue = getParsedValue(name, value, paramDefinition, modelInfo)
+			def parsedValue = getParsedValue(value, paramDefinition, modelInfo)
 			output."$name" = parsedValue
 		}
 	}
@@ -1060,6 +1054,8 @@ def decodeBinaryRTIMessage(protocol, modelInfo, data, returnCode) {
 		output.State = "@WM_STATE_POWER_OFF_W"
 
 	// Find any data value "target keys" and we will use this to find out the temperature
+	// This is really ugly, bug the older versions of ThinQ do not support targetKeys or references for
+	// this so we have to do the dirty work manually!
 	for (def dataVal in output.keySet()) {
 		def targetKey = thinq2ToV1DataValues[dataVal]
 		def targetKeyValue = output[dataVal]
@@ -1069,8 +1065,18 @@ def decodeBinaryRTIMessage(protocol, modelInfo, data, returnCode) {
 			for (def attribute in output.keySet()) {
 				def associatedKey = targetKey.associatedAttributes.find {it == attribute}
 				if (associatedKey != null) {
+					def associatedKeyValue = output[associatedKey]
 					def newKey = targetKey."${associatedKey}".$"{targetKeyValue}"
 					log.info "Found ${associatedKey} for ${dataVal} -> ${newKey}"
+					if (newKey != null) {
+						
+						def paramDefinition = getValueDefinition(newKey, values)
+						log.info "Found the key ${paramDefinition}"
+						parsedValue = getParsedValue(associatedKeyValue, paramDefinition, modelInfo)
+						log.info "Parsed Value is: ${parsedValue}"
+						if (parsedValue != null)
+							output."${associatedKey}" = parsedValue
+					}
 				}
 			}
 		}
@@ -1241,7 +1247,7 @@ def decodeMQTTMessage(dev, modelInfo, data) {
 
 			if (value != null) {
 				def paramDefinition = getValueDefinition(name, values)
-				def parsedValue = getParsedValue(name, value, paramDefinition, modelInfo)
+				def parsedValue = getParsedValue(value, paramDefinition, modelInfo)
 				output."$name" = parsedValue
 			}
 		}
