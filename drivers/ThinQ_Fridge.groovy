@@ -18,8 +18,8 @@ metadata {
         capability "ContactSensor"
 
         attribute "fridgeTemp", "number"
+        attribute "fridgeTemp°", "string"
         attribute "freezerTemp", "number"
-        attribute "fridgeTemp", "number"
         attribute "freezerTemp°", "string"
         attribute "craftIceMode°", "string"
         attribute "icePlus", "string"
