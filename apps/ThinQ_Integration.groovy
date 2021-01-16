@@ -1066,7 +1066,7 @@ def decodeBinaryRTIMessage(protocol, modelInfo, data, returnCode) {
 				def associatedKey = targetKey.associatedAttributes.find {it == attribute}
 				if (associatedKey != null) {
 					def associatedKeyValue = output[associatedKey]
-					def newKey = targetKey."${associatedKey}".$"{targetKeyValue}"
+					def newKey = targetKey."${associatedKey}"."${targetKeyValue}"
 					log.info "Found ${associatedKey} for ${dataVal} -> ${newKey}"
 					if (newKey != null) {
 						
