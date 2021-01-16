@@ -1056,6 +1056,7 @@ def decodeBinaryRTIMessage(protocol, modelInfo, data, returnCode) {
 	for (def dataVal in output.keySet()) {
 		def targetKey = thinq2ToV1DataValues[dataVal]
 		if (targetKey != null) {
+			log.info "Found ${dataVal}"
 			// Find the associated attributes
 			for (def attribute in output.keySet()) {
 				def associatedKey = targetKey.associatedAttributes.find {it == attribute})
