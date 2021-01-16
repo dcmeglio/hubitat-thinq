@@ -826,7 +826,7 @@ def getParsedValue(name, value, param, modelInfo) {
 			return value
 		case "enum":
 			def enumValue = param?.option[value.toString()] ?: param?.option[value] ?: value
-			if (name.startsWith("Temp") && modelInfo."${name}_F" != null) {
+			if (name.startsWith("Temp") && getValueDefinition("${name}_F", modelInfo.Value) != null) {
 				log.debug "It's a temp value"
 
 			}
