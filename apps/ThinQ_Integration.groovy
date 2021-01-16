@@ -826,9 +826,11 @@ def getParsedValue(name, value, param, modelInfo) {
 			return value
 		case "enum":
 			def enumValue = param?.option[value.toString()] ?: param?.option[value] ?: value
-			if (name.startsWith("Temp") && getValueDefinition("${name}_F", modelInfo.Value) != null) {
-				log.debug "It's a temp value"
+			if (name.startsWith("Temp")) {
+				log.info "Found ${name}"
+				if (getValueDefinition("${name}_F", modelInfo.Value) != null) {
 
+				}
 			}
 			return enumValue
 		case "reference":
@@ -997,6 +999,11 @@ def getRTIData(workList) {
 					if (modelInfo) {
 						if (modelInfo?.Monitoring?.type == "BINARY(BYTE)") {
 							result[deviceId] = decodeBinaryRTIMessage(modelInfo.Monitoring.protocol, modelInfo, data, returnCode)
+							// Check through the output to find any data values that need capturing.
+							for (dataVal in result[deviceId].keySet()) {
+								if (thinq2ToV1DataValues[dataVal] != null) 
+									dev.updateDataValue(dataVal, result[deviceId][dataVal])
+							}
 						}
 						else if (modelInfo?.Monitoring?.type == "THINQ2") {
 							logger("error", "getRTIData(${workList}) - Received RTI Data for Thinq2 device ${deviceId} this shouldn't happen...")
@@ -1044,6 +1051,7 @@ def decodeBinaryRTIMessage(protocol, modelInfo, data, returnCode) {
 	// Ugly hack to handle devices that report disconnected when they're off
 	if (returnCode == "0106")
 		output.State = "@WM_STATE_POWER_OFF_W"
+
 	return output
 }
 
