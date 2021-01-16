@@ -150,7 +150,7 @@ def processStateData(data) {
     delayTimeDisplay = parent.convertSecondsToTime(delayTime)
 
     if (parent.checkValue(data,'State')) {
-      String currentStateName = parent.cleanEnumValue(data["State"], "@WM_STATE_")
+      String currentStateName = parent.cleanEnumValue(data["State"], "@WM_STATE_").capitalize()
       if (device.currentValue("currentState") != currentStateName) {
         if(logDescText) {
           log.info "${device.displayName} CurrentState: ${currentStateName}"
