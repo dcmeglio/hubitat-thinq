@@ -149,6 +149,10 @@ preferences {
 	"atLeastOneDoorOpen": "DoorOpenState"
 ]
 
+@Field static def thinq2ToV1DataValues = [
+	"TempUnit"
+]
+
 def prefMain() {
 	if (state.client_id == null)
 		state.client_id = (UUID.randomUUID().toString()+UUID.randomUUID().toString()).replaceAll(/-/,"")
@@ -345,6 +349,7 @@ def initialize() {
 
 def getDeviceSnapshot(devDetails, child) {
 	def data = lgAPIGet("${state.thinqUrl}/service/devices/${devDetails.id}")
+	log.debug data
 	if (data?.snapshot != null) {
 		def dataNode = findMQTTDataNode(devDetails.modelJson, data.snapshot)
 		def targetKeys = getTargetKeys(devDetails.modelJson.MonitoringValue)
@@ -789,8 +794,8 @@ def getDeviceThinQVersion(dev) {
 }
 
 // Common device state processing methods
-def getParsedValue(value, param, modelInfo) {
-	logger("debug", "getParsedValue(${value}, ${param}, modelInfo[FILTERED])")
+def getParsedValue(name, value, param, modelInfo) {
+	logger("debug", "getParsedValue(${name}, ${value}, ${param}, modelInfo[FILTERED])")
 
 	if (param == null)
 		return value
@@ -820,7 +825,12 @@ def getParsedValue(value, param, modelInfo) {
 		case "range":
 			return value
 		case "enum":
-			return param?.option[value.toString()] ?: param?.option[value] ?: value
+			def enumValue = param?.option[value.toString()] ?: param?.option[value] ?: value
+			if (name.startsWith("Temp") && modelInfo."${name}_F" != null) {
+				log.debug "It's a temp value"
+
+			}
+			return enumValue
 		case "reference":
 			def refField = param.option[0]
 			if (refField)
@@ -1027,7 +1037,7 @@ def decodeBinaryRTIMessage(protocol, modelInfo, data, returnCode) {
 			}
 
 			def paramDefinition = getValueDefinition(name, values)
-			def parsedValue = getParsedValue(value, paramDefinition, modelInfo)
+			def parsedValue = getParsedValue(name, value, paramDefinition, modelInfo)
 			output."$name" = parsedValue
 		}
 	}
@@ -1199,7 +1209,7 @@ def decodeMQTTMessage(dev, modelInfo, data) {
 
 			if (value != null) {
 				def paramDefinition = getValueDefinition(name, values)
-				def parsedValue = getParsedValue(value, paramDefinition, modelInfo)
+				def parsedValue = getParsedValue(name, value, paramDefinition, modelInfo)
 				output."$name" = parsedValue
 			}
 		}
