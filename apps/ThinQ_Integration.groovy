@@ -140,7 +140,13 @@ preferences {
 	"smartCourseFL24inchBaseTitan": "SmartCourse",
 	"downloadedCourseDryer27inchBase": "SmartCourse",
 	"courseDryer27inchBase": "Course",
-	"courseFL24inchBaseTitan": "Course"
+	"courseFL24inchBaseTitan": "Course",
+	"fridgeTemp": "TempRefrigerator",
+	"freezerTemp": "TempFreezer",
+	"expressMode": "IcePlus",
+	"freshAirFilterStatus": "FreshAirFilter",
+	"waterFilter": "WaterFilterUsedMonth",
+	"atLeastOneDoorOpen": "DoorOpenState"
 ]
 
 def prefMain() {
@@ -920,12 +926,10 @@ def registerRTIMonitoring(dev) {
 			"workId": UUID.randomUUID().toString()
 		])
 		if (resultData?.returnCd == "0000") {
-			log.info "Successfully connected to RTI: ${resultData}"
 			dev.updateDataValue("workId", resultData.workId)
 			return resultData.workId
 		}
 		else {
-			log.error "Failed connecting to RTI: ${resultData}"
 			dev.removeDataValue("workId")
 			return null
 		}
@@ -993,6 +997,9 @@ def getRTIData(workList) {
 						}
 					}
 				}
+			}
+			else {
+				
 			}
 		}
 	}

@@ -104,28 +104,21 @@ def mqttClientStatus(String message) {
 def processStateData(data) {
     logger("debug", "processStateData(${data})")
 
-    if (data.atLeastOneDoorOpen == "OPEN")
+    if (data.DoorOpenState == "OPEN")
       sendEvent(name: "contact", value: "open")
-    else if (data.atLeastOneDoorOpen == "CLOSE")
+    else if (data.DoorOpenState == "CLOSE")
       sendEvent(name: "contact", value: "closed")
 
-    if (data.fridgeTemp != null) {
-      def temp = data.fridgeTemp
-      if (getTemperatureScale() == "C")
-        temp = fahrenheitToCelsius(data.fridgeTemp)
-      sendEvent(name: "fridgeTemp", value: temp)
-    }
-
-    if (data.freezerTemp != null) {
-      def temp = data.freezerTemp
+    if (data.TempFreezer != null) {
+      def temp = data.TempFreezer
       if (getTemperatureScale() == "C" && device.getDataValue("tempUnit") == "FAHRENHEIT")
         temp = fahrenheitToCelsius(temp)
       else if (getTemperatureScale() == "F" && device.getDataValue("tempUnit") == "CELSIUS")
         temp = celsiusToFahrenheit(temp)
       sendEvent(name: "freezerTemp", value: temp)
     }
-    if (data.fridgeTemp != null) {
-      def temp = data.fridgeTemp
+    if (data.TempRefrigerator != null) {
+      def temp = data.TempRefrigerator
       if (getTemperatureScale() == "C" && device.getDataValue("tempUnit") == "FAHRENHEIT")
         temp = fahrenheitToCelsius(temp)
       else if (getTemperatureScale() == "F" && device.getDataValue("tempUnit") == "CELSIUS")
@@ -140,16 +133,16 @@ def processStateData(data) {
         sendEvent(name: "craftIceMode", value: 3)
     }
 
-    if (data.expressMode) {
-      sendEvent(name: "icePlus", value: parent.cleanEnumValue(data.expressMode, "@CP_"))
+    if (data.IcePlus) {
+      sendEvent(name: "icePlus", value: parent.cleanEnumValue(data.IcePlus, "@CP_"))
     }
 
-    if (data.waterFilter) {
-      sendEvent(name: "waterFilterStatus", value: parent.cleanEnumValue(parent.cleanEnumValue(data.waterFilter, "@RE_TERM_"),"@RE_STATE_"))
+    if (data.WaterFilterUsedMonth) {
+      sendEvent(name: "waterFilterStatus", value: parent.cleanEnumValue(parent.cleanEnumValue(data.WaterFilterUsedMonth, "@RE_TERM_"),"@RE_STATE_"))
     }
 
-    if (data.freshAirFilter) {
-      sendEvent(name: "freshAirFilterStatus", value: parent.cleanEnumValue(parent.cleanEnumValue(data.freshAirFilter, "@RE_FILTER_STATE_"),"@RE_STATE_"))
+    if (data.FreshAirFilter) {
+      sendEvent(name: "freshAirFilterStatus", value: parent.cleanEnumValue(parent.cleanEnumValue(data.FreshAirFilter, "@RE_FILTER_STATE_"),"@RE_STATE_"))
     }
 }
 
