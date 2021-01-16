@@ -150,7 +150,7 @@ preferences {
 ]
 
 @Field static def thinq2ToV1DataValues = [
-	"TempUnit": [ dataValueKey: "tempUnit", associatedAttributes: ["TempRefrigerator", "TempFreezer"] ]
+	"TempUnit": [ dataValueKey: "tempUnit", dataValueMappings: ["˚F": "FAHRENHEIT", "˚C": "CELSIUS"], associatedAttributes: ["TempRefrigerator", "TempFreezer"] ]
 ]
 
 def prefMain() {
@@ -1001,8 +1001,10 @@ def getRTIData(workList) {
 							result[deviceId] = decodeBinaryRTIMessage(modelInfo.Monitoring.protocol, modelInfo, data, returnCode)
 							// Check through the output to find any data values that need capturing.
 							for (dataVal in result[deviceId].keySet()) {
-								if (thinq2ToV1DataValues[dataVal] != null) 
-									dev.updateDataValue(thinq2ToV1DataValues[dataVal].dataValueKey, result[deviceId][dataVal])
+								if (thinq2ToV1DataValues[dataVal] != null) {
+									def targetKey = thinq2ToV1DataValues[dataVal]
+									dev.updateDataValue(targetKey.dataValueKey, targetKey.dataValueMappings[result[deviceId][dataVal]])
+								}
 							}
 						}
 						else if (modelInfo?.Monitoring?.type == "THINQ2") {
@@ -1059,7 +1061,7 @@ def decodeBinaryRTIMessage(protocol, modelInfo, data, returnCode) {
 			log.info "Found ${dataVal}"
 			// Find the associated attributes
 			for (def attribute in output.keySet()) {
-				def associatedKey = targetKey.associatedAttributes.find {it == attribute})
+				def associatedKey = targetKey.associatedAttributes.find {it == attribute}
 				if (associatedKey != null) {
 					log.info "Found ${associatedKey} for ${dataVal}"
 				}
