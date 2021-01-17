@@ -21,7 +21,7 @@ metadata {
         attribute "fridgeTemp°", "string"
         attribute "freezerTemp", "number"
         attribute "freezerTemp°", "string"
-        attribute "craftIceMode°", "string"
+        attribute "craftIceMode°", "number"
         attribute "icePlus", "string"
         attribute "waterFilterStatus", "string"
         attribute "freshAirFilterStatus", "string"
