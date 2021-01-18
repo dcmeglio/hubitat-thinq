@@ -18,10 +18,10 @@ metadata {
         capability "ContactSensor"
 
         attribute "fridgeTemp", "number"
-        attribute "fridgeTemp°", "string"
+        attribute "fridgeTempDisplay", "string"
         attribute "freezerTemp", "number"
-        attribute "freezerTemp°", "string"
-        attribute "craftIceMode°", "number"
+        attribute "freezerTempDisplay", "string"
+        attribute "craftIceMode", "number"
         attribute "icePlus", "string"
         attribute "waterFilterStatus", "string"
         attribute "freshAirFilterStatus", "string"
@@ -117,8 +117,8 @@ def processStateData(data) {
         temp = fahrenheitToCelsius(temp)
       else if (getTemperatureScale() == "F" && device.getDataValue("tempUnit") == "CELSIUS")
         temp = celsiusToFahrenheit(temp)
-      sendEvent(name: "freezerTemp", value: temp)
-      sendEvent(name: "freezerTemp°", value: temp + "°" + getTemperatureScale())
+      sendEvent(name: "freezerTemp", value: temp, unit: getTemperatureScale())
+      sendEvent(name: "freezerTempDisplay", value: temp + "°"+ getTemperatureScale())
     }
     if (data.TempRefrigerator != null) {
       def temp = data.TempRefrigerator
@@ -126,8 +126,8 @@ def processStateData(data) {
         temp = fahrenheitToCelsius(temp)
       else if (getTemperatureScale() == "F" && device.getDataValue("tempUnit") == "CELSIUS")
         temp = celsiusToFahrenheit(temp)
-      sendEvent(name: "fridgeTemp", value: temp)
-      sendEvent(name: "fridgeTemp°", value: temp + "°" + getTemperatureScale())
+      sendEvent(name: "fridgeTemp", value: temp, unit: getTemperatureScale())
+      sendEvent(name: "fridgeTempDisplay", value: temp + "°"+ getTemperatureScale())
     }
 
     if (data.craftIceMode) {
