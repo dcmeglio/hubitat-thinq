@@ -158,6 +158,20 @@ preferences {
 	]
 ]
 
+@Field static List<Map<String,String>> currentStateCycleList = [
+    ["initial"  : "Inital"],
+    ["power on" : "Power On"],
+    ["detecting": "Detecting"],
+    ["pause"    : "Pause"],
+    ["spinning" : "Spinning"],
+    ["rinsing"  : "Rinsing"],
+    ["running"  : "Running"],
+    ["drying"   : "Drying"],
+    ["cooling"  : "Cooling"],
+    ["complete" : "Complete"],
+    ["power off": "Power Off"]
+]
+
 def prefMain() {
 	if (state.client_id == null)
 		state.client_id = (UUID.randomUUID().toString()+UUID.randomUUID().toString()).replaceAll(/-/,"")
@@ -271,7 +285,44 @@ def prefDevices() {
 		section {
 			input "thinqDevices", "enum", title: "Devices", required: true, options: deviceList, multiple: true
 		}
-	}
+        section {
+            paragraph "<div style='color:#1A77C9'>This application can provide notifications when a defined machine cycle event begins.</div>"
+            input name: "notificationsBool", type: "bool", title: "Use machine cycle notifications", required: false, defaultValue: false, submitOnChange: true
+        }
+        if(notificationsBool) {
+            section(getFormat("header-green", " Notification Preferences"))  {
+                input name: "notifyCycles", type: "enum", title: "Select the pre-defined machine cycles to send notifications?", options: currentStateCycleList, required: false, multiple: true
+                input name: "notifymodes",  type: "mode", title: "Send notifications only in these Hubitat modes", required: true, multiple: true
+            }
+            section(getFormat("header-green", " Notification Devices")) {
+                // PushOver Devices
+                input name: "pushovertts", type: "bool", title: "Use 'Pushover' device(s)?", required: false, defaultValue: false, submitOnChange: true
+                if(pushovertts) input name: "pushoverdevice", type: "capability.notification", title: "PushOver Device", required: true, multiple: true
+
+                // Music Speakers (Sonos, etc)
+                input name: "musicmode", type: "bool", defaultValue: "false", title: "Use Music Speaker(s) for TTS?", description: "Music Speaker(s)?",  required: false, submitOnChange: true
+                if (musicmode) input name: "musicspeaker", type: "capability.musicPlayer", title: "Choose speaker(s)", required: true, multiple: true, submitOnChange: true
+
+                // Speech Speakers
+                input name: "speechmode", type: "bool", defaultValue: "false", title: "Use Google or Speech Speaker(s) for TTS?", description: "Speech Speaker(s)?",  required: false, submitOnChange: true
+                if (speechmode) input name: "speechspeaker", type: "capability.speechSynthesis", title: "Choose speaker(s)", required: true, multiple: true, submitOnChange: true
+
+                // Echo Speaks devices
+                input name: "echoSpeaks2", type: "bool", defaultValue: "false", title: "Use Echo Speaks device(s) for TTS?", description: "Echo Speaks device?",  required: false, submitOnChange: true
+                if(echoSpeaks2) input name: "echospeaker", type: "capability.musicPlayer", title: "Choose Echo Speaks Device(s)", required: true, multiple: true, submitOnChange: true
+
+                // Master Volume settings
+                input name: "speakervolume", type: "number", title: "Notification Volume Level:", description: "0-100%", required: false, defaultValue: "90", submitOnChange: true
+                input name: "speakervolRestore", type: "number", title: "Restore Volume Level:", description: "0-100", required: false,  defaultValue: "75", submitOnChange: true
+            }
+        }
+    }
+}
+
+def getFormat(type, myText=""){
+    if(type == "header-green") return "<div style='color:#ffffff;font-weight: bold;background-color:#1A7BC7;border: 1px solid;box-shadow: 2px 3px #A9A9A9'>${myText}</div>"
+    if(type == "line") return "\n<hr style='background-color:#1A77C9; height: 1px; border: 0;'></hr>"
+    if(type == "title") return "<h2 style='color:#1A77C9;font-weight: bold'>${myText}</h2>"
 }
 
 def returnErrorPage(message, nextPage) {
@@ -1310,4 +1361,68 @@ private logger(level, msg) {
 			log."${level}" "${app.name} ${msg}"
 		}
 	}
+}
+
+def notificationCheck(displayName, currentStateName="Unknown Cycle") {
+    if ( (notifyCycles) && (notifymodes.find {it == location.mode}) ) {
+        if (notifyCycles.find {it == currentStateName}) {
+            logger("info", "${currentStateName} <- Match to Selected -> alertNow()")
+            def dateTime = new Date()  //get current localtime
+            def now = dateTime.format("h:mm a", location.timeZone)
+            alertNow("The ${displayName} is now on a '${titleCase(currentStateName)}' cycle at ${now}")
+        } else {
+            logger("info", "notificationCheck(): {$currentStateName} <- No Match to Selected")
+        }
+    }
+}
+
+def titleCase(str) {
+    str.split("\\s+").collect { it.toLowerCase().capitalize() }.join(" ")
+}
+
+def talkNow(alertmsg) {
+    if (musicmode){
+        logger("debug", "Sending alert to Music Speaker(s).")
+        try {
+            musicspeaker.playTextAndRestore(alertmsg, speakervolume)
+        }
+        catch (any) {logger("warn", "Music Player device(s) has not been selected.")}
+    }
+
+    if(echoSpeaks2) {
+        logger("debug", "Sending alert to Echo Speaks device(s).")
+        try {
+            echospeaker.setVolumeSpeakAndRestore(speakervolume, alertmsg)
+        }
+        catch (any) {logger("warn", "Echo Speaks device(s) has not been selected.")}
+    }
+
+    if (speechmode){
+        logger("debug", "Sending alert to Google and/or Speech Speaker(s)")
+
+        try {
+            logger("debug", "Setting Speech Speaker to volume level: ${speakervolume}")
+            speechspeaker.setVolume(speakervolume)
+            pauseExecution(1000)
+            speechspeaker.speak(alertmsg)
+            if (speakervolRestore) {
+                pauseExecution( (Math.max(Math.round(alertmsg.length()/12),2)+3)*1000 )
+                logger("debug", "Restoring Speech Speaker to volume level: ${speakervolRestore}")
+                speechspeaker.setVolume(speakervolRestore)
+            }
+        }
+        catch (any) {logger("warn", "Speech device(s) has not been selected or Error in sending.")}
+    }
+
+}
+
+def pushNow(alertmsg) {
+	if (pushovertts) {
+	    logger("debug", "Sending Pushover message.")
+        pushoverdevice.deviceNotification(alertmsg)
+	}
+}
+def alertNow(alertmsg){
+		pushNow(alertmsg)
+		talkNow(alertmsg)
 }

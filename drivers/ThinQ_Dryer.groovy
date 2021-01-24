@@ -23,6 +23,7 @@ metadata {
         attribute "remainingTimeDisplay", "string"
         attribute "finishTimeDisplay", "string"
         attribute "currentState", "string"
+        attribute "currentState_", "string"
         attribute "error", "string"
         attribute "course", "string"
         attribute "smartCourse", "string"
@@ -150,15 +151,17 @@ def processStateData(data) {
     delayTimeDisplay = parent.convertSecondsToTime(delayTime)
 
     if (parent.checkValue(data,'State')) {
-      String currentStateName = parent.cleanEnumValue(data["State"], "@WM_STATE_").capitalize()
+      String currentStateName = parent.cleanEnumValue(data["State"], "@WM_STATE_")
       if (device.currentValue("currentState") != currentStateName) {
         if(logDescText) {
           log.info "${device.displayName} CurrentState: ${currentStateName}"
         } else {
           logger("info", "CurrentState: ${currentStateName}")
         }
+          parent.notificationCheck(device.displayName, currentStateName )
       }
       sendEvent(name: "currentState", value: currentStateName)
+      sendEvent(name: "currentState_", value: titleCase(currentStateName))
 
       def currentStateSwitch = (currentStateName =~ /power off/ ? 'off' : 'on')
       if (device.currentValue("switch") != currentStateSwitch) {
@@ -210,4 +213,8 @@ private logger(level, msg) {
       log."${level}" "${device.displayName} ${msg}"
     }
   }
+}
+
+def titleCase(str) {
+    str.split("\\s+").collect { it.toLowerCase().capitalize() }.join(" ")
 }
