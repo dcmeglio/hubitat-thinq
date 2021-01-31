@@ -903,25 +903,25 @@ def getValueDefinition(name, values) {
 }
 
 def cleanEnumValue(value, prefix) {
-  def val = ""
+    def val = ""
 
-  if (value == null) { return val }
+    if (value == null) { return val }
 
-  if (prefix.class == String) {
-    val = value.replaceAll("^"+prefix,"").replaceAll(/(_[A-Za-z]{2})?_W$/,"").replaceAll(/_/," ").toLowerCase()
-  }
-
-  if (prefix.class == ArrayList) {
-    for ( p in prefix ) {
-      if (value.matches(/^$p.*/)) {
-        val = value.replaceAll("^"+p,"").replaceAll(/(_[A-Za-z]{2})?_W$/,"").replaceAll(/_/," ").toLowerCase()
-        break
-      }
+    if (prefix.class == String) {
+        val = value.replaceAll("^"+prefix,"").replaceAll(/(_[A-Za-z]{2})?_W$/,"").replaceAll(/_/," ").toLowerCase()
     }
-  }
 
-  logger("info", "cleanEnumValue(${value}, ${prefix}) = ${val}")
-  return val
+    if (prefix.class == ArrayList) {
+        for ( p in prefix ) {
+            if (value.matches(/^$p.*/)) {
+                val = value.replaceAll("^"+p,"").replaceAll(/(_[A-Za-z]{2})?_W$/,"").replaceAll(/_/," ").toLowerCase()
+                break
+            }
+        }
+    }
+
+    logger("info", "cleanEnumValue(${value}, ${prefix}) = ${val}")
+    return val
 }
 
 // check is map has an actual value
@@ -1363,15 +1363,16 @@ private logger(level, msg) {
 	}
 }
 
-def notificationCheck(displayName, currentStateName="Unknown Cycle") {
+def notificationCheck(displayName, currentStateName="Unknown Cycle???") {
+    logger("debug", "${currentStateName} <- Checking for Cycle Alert")
     if ( (notifyCycles) && (notifymodes.find {it == location.mode}) ) {
         if (notifyCycles.find {it == currentStateName}) {
-            logger("info", "${currentStateName} <- Match to Selected -> alertNow()")
+            logger("debug", "${currentStateName} <- Match to Selected -> alertNow()")
             def dateTime = new Date()  //get current localtime
             def now = dateTime.format("h:mm a", location.timeZone)
             alertNow("The ${displayName} is now on a '${titleCase(currentStateName)}' cycle at ${now}")
         } else {
-            logger("info", "notificationCheck(): {$currentStateName} <- No Match to Selected")
+            logger("debug", "notificationCheck(): {$currentStateName} <- No Match to Selected")
         }
     }
 }
