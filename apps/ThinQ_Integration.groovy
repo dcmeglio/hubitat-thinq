@@ -38,7 +38,7 @@ preferences {
 
 @Field static def certGeneratorUrl = "https://lgthinq.azurewebsites.net/api/certdata"
 @Field static def gatewayUrl = "https://route.lgthinq.com:46030/v1/service/application/gateway-uri"
-@Field static def caCertUrl = "https://www.websecurity.digicert.com/content/dam/websitesecurity/digitalassets/desktop/pdfs/roots/VeriSign-Class%203-Public-Primary-Certification-Authority-G5.pem"
+@Field static def caCertUrl = "https://www.amazontrust.com/repository/AmazonRootCA1.pem"
 
 @Field static def supportedDeviceTypes = [
 	101, // Fridge
@@ -187,7 +187,12 @@ def prefMain() {
 		state.thinq1Url = apiGatewayResult.thinq1Uri
 		state.empSpxUri = apiGatewayResult.empSpxUri
 		state.rtiUri = apiGatewayResult.rtiUri
-		state.mqttServer = mqttResult.mqttServer
+		if (!mqttResult.mqttServer.contains("-ats.iot")) {
+    		def mqttServerParts = mqttResult.mqttServer.split(".iot.")
+    		state.mqttServer = mqttServerParts[0]+'-ats.iot.'+mqttServerParts[1]
+		}
+		else
+			state.mqttServer = mqttResult.mqttServer
 	}
 
 	return dynamicPage(name: "prefMain", title: "LG ThinQ OAuth", nextPage: "prefCert", uninstall:false, install: false) {
