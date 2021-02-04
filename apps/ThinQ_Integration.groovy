@@ -159,8 +159,8 @@ preferences {
 ]
 
 @Field static List<Map<String,String>> currentStateCycleList = [
-    ["initial"  : "Inital"],
     ["power on" : "Power On"],
+    ["initial"  : "Inital"],
     ["detecting": "Detecting"],
     ["pause"    : "Pause"],
     ["spinning" : "Spinning"],
@@ -169,6 +169,7 @@ preferences {
     ["drying"   : "Drying"],
     ["cooling"  : "Cooling"],
     ["complete" : "Complete"],
+    ["end"      : "End"],
     ["power off": "Power Off"]
 ]
 
