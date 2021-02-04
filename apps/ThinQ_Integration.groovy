@@ -38,7 +38,7 @@ preferences {
 
 @Field static def certGeneratorUrl = "https://lgthinq.azurewebsites.net/api/certdata"
 @Field static def gatewayUrl = "https://route.lgthinq.com:46030/v1/service/application/gateway-uri"
-@Field static def caCertUrl = "https://www.websecurity.digicert.com/content/dam/websitesecurity/digitalassets/desktop/pdfs/roots/VeriSign-Class%203-Public-Primary-Certification-Authority-G5.pem"
+@Field static def caCertUrl = "https://www.amazontrust.com/repository/AmazonRootCA1.pem"
 
 @Field static def supportedDeviceTypes = [
 	101, // Fridge
@@ -140,7 +140,22 @@ preferences {
 	"smartCourseFL24inchBaseTitan": "SmartCourse",
 	"downloadedCourseDryer27inchBase": "SmartCourse",
 	"courseDryer27inchBase": "Course",
-	"courseFL24inchBaseTitan": "Course"
+	"courseFL24inchBaseTitan": "Course",
+	"fridgeTemp": "TempRefrigerator",
+	"freezerTemp": "TempFreezer",
+	"expressMode": "IcePlus",
+	"freshAirFilterStatus": "FreshAirFilter",
+	"waterFilter": "WaterFilterUsedMonth",
+	"atLeastOneDoorOpen": "DoorOpenState"
+]
+
+@Field static def thinq2ToV1DataValues = [
+	"TempUnit": [ dataValueKey: "tempUnit", 
+		dataValueMappings: ["˚F": "FAHRENHEIT", "˚C": "CELSIUS"], 
+		associatedAttributes: ["TempRefrigerator", "TempFreezer"],
+		TempRefrigerator: ["˚F": "TempRefrigerator_F", "˚C": "TempRefrigerator_C"],
+		TempFreezer: ["˚F": "TempFreezer_F", "˚C": "TempFreezer_C"]
+	]
 ]
 
 def prefMain() {
@@ -172,7 +187,12 @@ def prefMain() {
 		state.thinq1Url = apiGatewayResult.thinq1Uri
 		state.empSpxUri = apiGatewayResult.empSpxUri
 		state.rtiUri = apiGatewayResult.rtiUri
-		state.mqttServer = mqttResult.mqttServer
+		if (!mqttResult.mqttServer.contains("-ats.iot")) {
+    		def mqttServerParts = mqttResult.mqttServer.split(".iot.")
+    		state.mqttServer = mqttServerParts[0]+'-ats.iot.'+mqttServerParts[1]
+		}
+		else
+			state.mqttServer = mqttResult.mqttServer
 	}
 
 	return dynamicPage(name: "prefMain", title: "LG ThinQ OAuth", nextPage: "prefCert", uninstall:false, install: false) {
@@ -339,6 +359,7 @@ def initialize() {
 
 def getDeviceSnapshot(devDetails, child) {
 	def data = lgAPIGet("${state.thinqUrl}/service/devices/${devDetails.id}")
+	log.debug data
 	if (data?.snapshot != null) {
 		def dataNode = findMQTTDataNode(devDetails.modelJson, data.snapshot)
 		def targetKeys = getTargetKeys(devDetails.modelJson.MonitoringValue)
@@ -814,7 +835,8 @@ def getParsedValue(value, param, modelInfo) {
 		case "range":
 			return value
 		case "enum":
-			return param?.option[value.toString()] ?: param?.option[value] ?: value
+			def enumValue = param?.option[value.toString()] ?: param?.option[value] ?: value
+			return enumValue
 		case "reference":
 			def refField = param.option[0]
 			if (refField)
@@ -920,12 +942,10 @@ def registerRTIMonitoring(dev) {
 			"workId": UUID.randomUUID().toString()
 		])
 		if (resultData?.returnCd == "0000") {
-			log.info "Successfully connected to RTI: ${resultData}"
 			dev.updateDataValue("workId", resultData.workId)
 			return resultData.workId
 		}
 		else {
-			log.error "Failed connecting to RTI: ${resultData}"
 			dev.removeDataValue("workId")
 			return null
 		}
@@ -983,6 +1003,13 @@ def getRTIData(workList) {
 					if (modelInfo) {
 						if (modelInfo?.Monitoring?.type == "BINARY(BYTE)") {
 							result[deviceId] = decodeBinaryRTIMessage(modelInfo.Monitoring.protocol, modelInfo, data, returnCode)
+							// Check through the output to find any data values that need capturing.
+							for (dataVal in result[deviceId].keySet()) {
+								if (thinq2ToV1DataValues[dataVal] != null) {
+									def targetKey = thinq2ToV1DataValues[dataVal]
+									dev.updateDataValue(targetKey.dataValueKey, targetKey.dataValueMappings[result[deviceId][dataVal]])
+								}
+							}
 						}
 						else if (modelInfo?.Monitoring?.type == "THINQ2") {
 							logger("error", "getRTIData(${workList}) - Received RTI Data for Thinq2 device ${deviceId} this shouldn't happen...")
@@ -993,6 +1020,9 @@ def getRTIData(workList) {
 						}
 					}
 				}
+			}
+			else {
+				
 			}
 		}
 	}
@@ -1027,6 +1057,36 @@ def decodeBinaryRTIMessage(protocol, modelInfo, data, returnCode) {
 	// Ugly hack to handle devices that report disconnected when they're off
 	if (returnCode == "0106")
 		output.State = "@WM_STATE_POWER_OFF_W"
+
+	// Find any data value "target keys" and we will use this to find out the temperature
+	// This is really ugly, bug the older versions of ThinQ do not support targetKeys or references for
+	// this so we have to do the dirty work manually!
+	for (def dataVal in output.keySet()) {
+		def targetKey = thinq2ToV1DataValues[dataVal]
+		def targetKeyValue = output[dataVal]
+		if (targetKey != null) {
+			log.info "Found ${dataVal}"
+			// Find the associated attributes
+			for (def attribute in output.keySet()) {
+				def associatedKey = targetKey.associatedAttributes.find {it == attribute}
+				if (associatedKey != null) {
+					def associatedKeyValue = output[associatedKey]
+					def newKey = targetKey."${associatedKey}".$"{targetKeyValue}"
+					log.info "Found ${associatedKey} for ${dataVal} -> ${newKey}"
+					if (newKey != null) {
+						
+						def paramDefinition = getValueDefinition(newKey, values)
+						log.info "Found the key ${paramDefinition}"
+						parsedValue = getParsedValue(associatedKeyValue, paramDefinition, modelInfo)
+						log.info "Parsed Value is: ${parsedValue}"
+						if (parsedValue != null)
+							output."${associatedKey}" = parsedValue
+					}
+				}
+			}
+		}
+
+	}
 	return output
 }
 
