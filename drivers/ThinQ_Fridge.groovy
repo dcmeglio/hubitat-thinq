@@ -139,15 +139,13 @@ def processStateData(data) {
     }
 
     if (data.WaterFilterUsedMonth) {
-      sendEvent(name: "waterFilterStatus", value: parent.cleanEnumValue(parent.cleanEnumValue(data.WaterFilterUsedMonth, "@RE_TERM_"),"@RE_STATE_"))
+      sendEvent(name: "waterFilterStatus", value: parent.cleanEnumValue(data.WaterFilterUsedMonth, ["@RE_TERM_","@RE_STATE_"]))
     }
 
     if (data.FreshAirFilter) {
       sendEvent(name: "freshAirFilterStatus", value: 
-        parent.cleanEnumValue(
-          parent.cleanEnumValue(
-            parent.cleanEnumValue(data.FreshAirFilter, "@RE_STATE_FRESH_AIR_FILTER_MODE_")
-            ,"@RE_STATE_"),"@RE_FILTER_STATE_"))
+        parent.cleanEnumValue(data.FreshAirFilter, ["@RE_STATE_FRESH_AIR_FILTER_MODE_","@RE_FILTER_STATE_","@RE_STATE_"])
+      )
     }
 }
 

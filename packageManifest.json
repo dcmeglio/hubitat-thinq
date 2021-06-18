@@ -1,0 +1,56 @@
+{
+  "packageName": "LG ThinQ Integration",
+  "author": "Dominick Meglio",
+  "minimumHEVersion": "2.1.9",
+  "version": "1.0.0",
+  "dateReleased": "2021-06-18",
+  "communityLink": "https://community.hubitat.com/t/my-god-anyone-attempted-an-lg-thinq-integration/51925",
+  "apps": [
+    {
+      "id": "8c059cd7-2213-43df-825a-4d968ec0e84f",
+      "name": "LG ThinQ Integration",
+      "namespace": "dcm.thinq",
+      "location": "https://raw.githubusercontent.com/dcmeglio/hubitat-thinq/master/apps/ThinQ_Integration.groovy",
+      "required": true,
+      "oauth": false,
+      "primary": true
+    }
+  ],
+  "drivers": [
+    {
+      "id": "dab401ef-e6de-4120-ba96-029041928651",
+      "name": "LG ThinQ Dishwasher",
+      "namespace": "dcm.thinq",
+      "location": "https://raw.githubusercontent.com/dcmeglio/hubitat-thinq/master/drivers/ThinQ_Dishwasher.groovy",
+      "required": true
+    },
+    {
+      "id": "17e6e620-7baf-4d25-abd5-e84b1edcc29b",
+      "name": "LG ThinQ Dryer",
+      "namespace": "dcm.thinq",
+      "location": "https://raw.githubusercontent.com/dcmeglio/hubitat-thinq/master/drivers/ThinQ_Dryer.groovy",
+      "required": true
+    },
+    {
+      "id": "834ece2c-f542-42e7-b9b6-719da096883b",
+      "name": "LG ThinQ Fridge",
+      "namespace": "dcm.thinq",
+      "location": "https://raw.githubusercontent.com/dcmeglio/hubitat-thinq/master/drivers/ThinQ_Fridge.groovy",
+      "required": true
+    },
+    {
+      "id": "5cedaae4-1ec9-457f-8202-fff19e41823a",
+      "name": "LG ThinQ Oven",
+      "namespace": "dcm.thinq",
+      "location": "https://raw.githubusercontent.com/dcmeglio/hubitat-thinq/master/drivers/ThinQ_Oven.groovy",
+      "required": true
+    },
+    {
+      "id": "60fd90d6-372a-46ba-81b3-a1d900df1fb4",
+      "name": "LG ThinQ Washer",
+      "namespace": "dcm.thinq",
+      "location": "https://raw.githubusercontent.com/dcmeglio/hubitat-thinq/master/drivers/ThinQ_Washer.groovy",
+      "required": true
+    }
+  ]
+}
