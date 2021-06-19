@@ -45,6 +45,8 @@ preferences {
 	201, // Washer
 	202, // Dryer
 	204, // Dishwasher
+    221, // WashTower - Washer
+    222, // WashTower - Dryer
 	301 // Oven
 ]
 
@@ -52,6 +54,8 @@ preferences {
 	Fridge: 101,
 	Washer: 201,
 	Dryer: 202,
+	WashTowerWasher: 221,
+	WashTowerDryer: 222,
 	Dishwasher: 204,
 	Oven: 301
 ]
@@ -316,9 +320,11 @@ def initialize() {
 		def driverName = ""
 		switch (deviceDetails.type) {
 			case deviceTypeConstants.Dryer:
+            case deviceTypeConstants.WashTowerDryer:
 				driverName = "LG ThinQ Dryer"
 				break
 			case deviceTypeConstants.Washer:
+            case deviceTypeConstants.WashTowerWasher:
 				driverName = "LG ThinQ Washer"
 				break
 			case deviceTypeConstants.Fridge:
@@ -335,7 +341,7 @@ def initialize() {
 			hasV1Device = deviceDetails.version == "thinq1"
 		def childDevice = getChildDevice("thinq:"+deviceDetails.id)
 		if (childDevice == null) {
-			childDevice = addChildDevice("dcm.thinq", driverName, "thinq:" + deviceDetails.id, 1234, ["name": deviceDetails.name,isComponent: false])
+			childDevice = addChildDevice("dcm.thinq", driverName, "thinq:" + deviceDetails.id, 1234, ["name": driverName, isComponent: false])
 			if (!findMasterDevice() && deviceDetails.version == "thinq2") {
 				childDevice.updateDataValue("master", "true")
 				childDevice.initialize()
@@ -780,6 +786,10 @@ def getDevices() {
 	if (data) {
 		def devices = data.item
 		logger("info", "Found ${devices?.size()} devices")
+	
+        devices.each {
+            logger("info", "modelJsonUri: ${it.modelJsonUri}, id: ${it.deviceId}, name: ${it.alias}, type: ${it.deviceType}, version: ${it.platformType}, supported: ${supportedDeviceTypes.contains(it.deviceType) ? "True" : " False"}")
+	    }
 
 		return devices.findAll { d -> supportedDeviceTypes.find { supported -> supported == d.deviceType } }
 	}
