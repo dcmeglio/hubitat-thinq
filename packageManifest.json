@@ -2,8 +2,9 @@
   "packageName": "LG ThinQ Integration",
   "author": "Dominick Meglio",
   "minimumHEVersion": "2.1.9",
-  "version": "1.0.0",
-  "dateReleased": "2021-06-18",
+  "version": "1.0.1",
+  "dateReleased": "2021-06-30",
+  "releaseNotes": "Fixed a bug with retries not working if an authentication timeout occurred.",
   "communityLink": "https://community.hubitat.com/t/my-god-anyone-attempted-an-lg-thinq-integration/51925",
   "apps": [
     {
