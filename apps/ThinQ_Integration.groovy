@@ -475,6 +475,7 @@ def lgAPIGet(uri) {
 			}
 		}
 		logger("trace", "lgAPIGet(${uri}) - ${result}")
+		state.auth_retry_cnt = 0
 		return result
 	}
 	catch (Exception e) {
@@ -493,6 +494,8 @@ def lgAPIGet(uri) {
 						state.refresh_token = refreshResult.refresh_token
 					if (state.access_token != null & state.auth_retry_cnt < AUTH_RETRY_MAX)
 						return lgAPIGet(uri)
+					else
+						state.auth_retry_cnt = 0
 				}
 			}
 			else {
@@ -524,7 +527,7 @@ def lgAPIPost(uri, body) {
 				else
 					logger("error", "lgAPIPost(${uri}, ${body}) - ${responseCodeText[resp.data.resultCode]}")
 		}
-
+		state.auth_retry_cnt = 0
 		logger("trace", "lgAPIPost(${uri}, ${body}) - ${result}")
 		return result
 	}
@@ -547,6 +550,8 @@ def lgAPIPost(uri, body) {
 						state.refresh_token = refreshResult.refresh_token
 					if (state.access_token != null & state.auth_retry_cnt < AUTH_RETRY_MAX)
 						return lgAPIPost(uri, body)
+					else
+						state.auth_retry_cnt = 0
 				}
 			}
 			else
@@ -735,6 +740,8 @@ def lgEdmPost(url, body, refresh = true) {
 					loginv1()
 					if (state.access_token != null && refresh & state.auth_retry_cnt < AUTH_RETRY_MAX)
 						return lgEdmPost(url, body, false)
+					else
+						state.auth_retry_cnt = 0
 				}
 			}
 			else {
@@ -742,6 +749,7 @@ def lgEdmPost(url, body, refresh = true) {
 				return null
 			}
 		}
+		state.auth_retry_cnt = 0
 	}
 	catch (Exception e) {
 		def data = e?.getResponse()?.data
@@ -759,6 +767,8 @@ def lgEdmPost(url, body, refresh = true) {
 						state.refresh_token = refreshResult.refresh_token
 					if (state.access_token != null & state.auth_retry_cnt < AUTH_RETRY_MAX)
 						return lgEdmPost(url, body)
+					else
+						state.auth_retry_cnt = 0
 				}
 			}
 			else {
