@@ -2,8 +2,9 @@
   "packageName": "LG ThinQ Integration",
   "author": "Dominick Meglio",
   "minimumHEVersion": "2.1.9",
-  "version": "1.0.0",
-  "dateReleased": "2021-06-18",
+  "version": "1.1.0",
+  "dateReleased": "2021-07-06",
+  "releaseNotes": "Added support for Wash Tower devices courtesy of rfg81!",
   "communityLink": "https://community.hubitat.com/t/my-god-anyone-attempted-an-lg-thinq-integration/51925",
   "apps": [
     {
