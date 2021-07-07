@@ -47,7 +47,8 @@ preferences {
 	204, // Dishwasher
     221, // WashTower - Washer
     222, // WashTower - Dryer
-	301 // Oven
+	301, // Oven
+	401  // AirConditioner
 ]
 
 @Field static def deviceTypeConstants = [
@@ -57,7 +58,8 @@ preferences {
 	WashTowerWasher: 221,
 	WashTowerDryer: 222,
 	Dishwasher: 204,
-	Oven: 301
+	Oven: 301,
+	AirConditioner: 401
 ]
 
 @Field static def responseCodeText = [
@@ -335,6 +337,9 @@ def initialize() {
 				break
 			case deviceTypeConstants.Dishwasher:
 				driverName = "LG ThinQ Dishwasher"
+				break
+			case deviceTypeConstants.AirConditioner:
+				driverName = "LG ThinQ AirConditioner"
 				break
 		}
 		if (!hasV1Device)
@@ -1192,8 +1197,19 @@ def processMqttMessage(dev, payload) {
 
 def findMQTTDataNode(modelInfo, data) {
 	logger("debug", "findMQTTDataNode(${data})")
-	def controlWifi = modelInfo.ControlWifi
-	def key = controlWifi.keySet()[0]
+	def key = ""
+    def controlWifi = null
+    
+    if (modelInfo.containsKey("ControlDevice")) {
+    	def ControlDevice = modelInfo.ControlDevice[0]
+		key = ControlDevice.keySet()[0]
+    	return data
+    }
+    else {
+		controlWifi = modelInfo.ControlWifi
+ 	   	key = controlWifi.keySet()[0]
+	}
+	
 	if (modelInfo?.Config?.targetRoot != null) 
 		return data."${modelInfo.Config.targetRoot}"
 	else if (controlWifi[key].containsKey("data")) {
@@ -1278,11 +1294,19 @@ def decodeMQTTMessage(dev, modelInfo, data) {
 		}
 	}
 	// Thinqv2 style
-	else if (modelInfo.MonitoringValue != null) {
-		for (parameter in modelInfo.MonitoringValue.keySet()) {
-			if (data[parameter] != null) {
-				def parsedValue = getParsedMqttValue(data[parameter], modelInfo.MonitoringValue[parameter], modelInfo, dev)
-				output."${thinq2To1Mapping[parameter] ?: parameter}" = parsedValue
+	else {
+		def key = null
+		if (modelInfo.MonitoringValue != null)
+			key = modelInfo.MonitoringValue
+		else if (modelInfo.Value != null)
+			key = modelInfo.Value
+
+		if (key != null) {
+			for (parameter in key.keySet()) {
+				if (data[parameter] != null) {
+					def parsedValue = getParsedMqttValue(data[parameter],key[parameter], modelInfo, dev)
+					output."${thinq2To1Mapping[parameter] ?: parameter}" = parsedValue
+				}
 			}
 		}
 	}
