@@ -341,7 +341,7 @@ def initialize() {
 			hasV1Device = deviceDetails.version == "thinq1"
 		def childDevice = getChildDevice("thinq:"+deviceDetails.id)
 		if (childDevice == null) {
-			childDevice = addChildDevice("dcm.thinq", driverName, "thinq:" + deviceDetails.id, 1234, ["name": driverName, isComponent: false])
+			childDevice = addChildDevice("dcm.thinq", driverName, "thinq:" + deviceDetails.id, 1234, ["name": deviceDetails.name, isComponent: false])
 			if (!findMasterDevice() && deviceDetails.version == "thinq2") {
 				childDevice.updateDataValue("master", "true")
 				childDevice.initialize()
