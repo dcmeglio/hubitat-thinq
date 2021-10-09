@@ -1,7 +1,7 @@
 {
   "packageName": "LG ThinQ Integration",
   "author": "Dominick Meglio",
-  "minimumHEVersion": "22.9",
+  "minimumHEVersion": "2.2.9",
   "version": "1.2.0",
   "dateReleased": "2021-10-08",
   "releaseNotes": "Fixed compatibility issues due to SSL errors",
