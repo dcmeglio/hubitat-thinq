@@ -191,11 +191,12 @@ def prefMain() {
 		state.thinq1Url = apiGatewayResult.thinq1Uri
 		state.empSpxUri = apiGatewayResult.empSpxUri
 		state.rtiUri = apiGatewayResult.rtiUri
-		if (!mqttResult.mqttServer.contains("-ats.iot")) {
+ 
+		if (mqttResult.mqttServer != "ssl://common.iot.aic.lgthinq.com:8883" && !mqttResult.mqttServer.contains("-ats.iot")) {
     		def mqttServerParts = mqttResult.mqttServer.split(".iot.")
     		state.mqttServer = mqttServerParts[0]+'-ats.iot.'+mqttServerParts[1]
-		}
-		else
+		}            
+        else
 			state.mqttServer = mqttResult.mqttServer
 	}
 
